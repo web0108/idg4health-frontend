@@ -6,7 +6,7 @@ import { Lock, User, LogOut, Activity } from 'lucide-react';
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [currentUserRole, setCurrentUserRole] = useState('');
+  const [currentUser, setCurrentUser] = useState(null);
   
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -16,16 +16,22 @@ export default function App() {
     e.preventDefault();
     setError('');
 
-    // Standalone Mock Authentication
     if (password === 'admin123') {
-      if (username === 'bhw_ampayon') {
-        setCurrentUserRole('BHW');
+      if (username.toLowerCase().startsWith('bhw_')) {
+        const rawBrgy = username.substring(4);
+        const formattedBrgy = rawBrgy
+          .split('_')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
+
+        setCurrentUser({ role: 'BHW', location: `Barangay ${formattedBrgy}` });
         setIsAuthenticated(true);
+        
       } else if (username === 'rhu_nurse') {
-        setCurrentUserRole('RHU');
+        setCurrentUser({ role: 'RHU', location: 'RHU Main' });
         setIsAuthenticated(true);
       } else if (username === 'cho_admin') {
-        setCurrentUserRole('CHO');
+        setCurrentUser({ role: 'CHO', location: 'City Health Office' });
         setIsAuthenticated(true);
       } else {
         setError('Invalid username. Check the credentials below.');
@@ -37,7 +43,7 @@ export default function App() {
 
   const handleLogout = () => {
     setIsAuthenticated(false);
-    setCurrentUserRole('');
+    setCurrentUser(null);
     setUsername('');
     setPassword('');
   };
@@ -70,7 +76,7 @@ export default function App() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="pl-10 w-full text-sm border-slate-300 rounded-lg p-2.5 border focus:ring-2 focus:ring-blue-500 outline-none" 
-                  placeholder="Enter username"
+                  placeholder="e.g. bhw_ampayon"
                   required
                 />
               </div>
@@ -97,9 +103,10 @@ export default function App() {
               Login
             </button>
             
-            <div className="pt-4 mt-4 border-t border-slate-100 text-xs text-slate-500 text-center">
+            <div className="pt-4 mt-4 border-t border-slate-100 text-xs text-slate-500 text-center space-y-1">
               <p>Prototype Credentials (Password: <b>admin123</b>):</p>
-              <p className="mt-1">BHW: <b>bhw_ampayon</b> | RHU: <b>rhu_nurse</b> | CHO: <b>cho_admin</b></p>
+              <p>BHW: <b>bhw_[any_barangay]</b> (e.g., bhw_doongan)</p>
+              <p>RHU: <b>rhu_nurse</b> | CHO: <b>cho_admin</b></p>
             </div>
           </form>
         </div>
@@ -114,7 +121,7 @@ export default function App() {
           <Activity className="w-6 h-6 text-blue-600" />
           <span className="font-bold text-slate-800 text-lg">IDG4Health</span>
           <span className="ml-2 px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs font-medium border border-slate-200">
-            {currentUserRole} Portal
+            {currentUser.role === 'BHW' ? 'Barangay Health Worker' : currentUser.role} Portal
           </span>
         </div>
         
@@ -128,9 +135,9 @@ export default function App() {
       </nav>
 
       <div className="flex-1 flex flex-col">
-        {currentUserRole === 'BHW' && <BHWDataEntry />}
-        {currentUserRole === 'RHU' && <RHUNurseDashboard />}
-        {currentUserRole === 'CHO' && <CHODashboard />}
+        {currentUser.role === 'BHW' && <BHWDataEntry currentUser={currentUser} />}
+        {currentUser.role === 'RHU' && <RHUNurseDashboard />}
+        {currentUser.role === 'CHO' && <CHODashboard />}
       </div>
     </div>
   );
