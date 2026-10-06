@@ -25,7 +25,9 @@ export default function RHUNurseDashboard() {
       },
       date: '2026-10-06',
       timestamp: '10/6/2026, 9:15:22 AM',
-      status: 'Pending Review'
+      status: 'Pending Review',
+      validatorRemarks: '',
+      labFlagged: false
     },
     {
       id: 'REC-2026-002',
@@ -41,7 +43,9 @@ export default function RHUNurseDashboard() {
       },
       date: '2026-10-06',
       timestamp: '10/6/2026, 11:30:05 AM',
-      status: 'Pending Review'
+      status: 'Pending Review',
+      validatorRemarks: '',
+      labFlagged: false
     },
     {
       id: 'REC-2026-003',
@@ -58,7 +62,9 @@ export default function RHUNurseDashboard() {
       },
       date: '2026-10-05',
       timestamp: '10/5/2026, 2:45:10 PM',
-      status: 'Validated'
+      status: 'Validated',
+      validatorRemarks: 'Patient scheduled for follow-up ultrasound next month. Routine prenatal vitamins prescribed.',
+      labFlagged: true
     }
   ]);
 
@@ -68,7 +74,7 @@ export default function RHUNurseDashboard() {
 
   const handleApprove = (id) => {
     setRecords(records.map(rec => 
-      rec.id === id ? { ...rec, status: 'Validated' } : rec
+      rec.id === id ? { ...rec, status: 'Validated', validatorRemarks: 'Validated by LHU Staff.' } : rec
     ));
     setSelectedRecord(null);
   };
@@ -182,9 +188,12 @@ export default function RHUNurseDashboard() {
                               <Eye className="w-4 h-4" /> Review
                             </button>
                           ) : (
-                            <span className="text-xs font-medium text-slate-400 flex items-center justify-center gap-1">
-                              <CheckCircle className="w-3.5 h-3.5" /> Validated
-                            </span>
+                            <button 
+                              onClick={() => setSelectedRecord(record)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg text-xs font-semibold transition"
+                            >
+                              <Eye className="w-4 h-4" /> View Details
+                            </button>
                           )}
                         </td>
                       </tr>
@@ -221,7 +230,8 @@ export default function RHUNurseDashboard() {
             
             <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
               <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2">
-                <FileCheck className="w-5 h-5 text-blue-600" /> Clinical Data Validation
+                <FileCheck className="w-5 h-5 text-blue-600" /> 
+                {selectedRecord.status === 'Validated' ? 'Validated Clinical Record' : 'Clinical Data Validation'}
               </h3>
               <button onClick={() => setSelectedRecord(null)} className="text-slate-400 hover:text-red-500 transition">
                 <X className="w-6 h-6" />
@@ -229,6 +239,14 @@ export default function RHUNurseDashboard() {
             </div>
 
             <div className="p-6 overflow-y-auto space-y-6">
+              {/* If Validated, show a banner at the top */}
+              {selectedRecord.status === 'Validated' && (
+                <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3 rounded-lg flex items-center gap-2 text-sm font-medium">
+                  <CheckCircle className="w-5 h-5 text-emerald-600" />
+                  This record has already been validated and exported to the FHSIS database. It is now read-only.
+                </div>
+              )}
+
               <div className="flex items-start justify-between bg-blue-50/50 p-4 rounded-xl border border-blue-100">
                 <div>
                   <h4 className="text-base font-bold text-blue-900">{selectedRecord.patient.name}</h4>
@@ -327,13 +345,21 @@ export default function RHUNurseDashboard() {
                 </h5>
                 <textarea 
                   rows="3" 
+                  defaultValue={selectedRecord.validatorRemarks}
+                  disabled={selectedRecord.status === 'Validated'}
                   placeholder="Enter clinical remarks, FHSIS codes, or reasons for returning the record to the BHW..." 
-                  className="w-full text-sm border-slate-300 rounded-lg p-3 border focus:ring-2 focus:ring-blue-500 bg-white shadow-sm"
+                  className={`w-full text-sm rounded-lg p-3 border shadow-sm ${selectedRecord.status === 'Validated' ? 'bg-slate-100 border-slate-200 text-slate-600 cursor-not-allowed' : 'bg-white border-slate-300 focus:ring-2 focus:ring-blue-500'}`}
                 ></textarea>
                 
-                <div className="flex items-center gap-2 mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800">
-                  <input type="checkbox" id="labFlag" className="w-4 h-4 text-amber-600 rounded border-amber-300 focus:ring-amber-500" />
-                  <label htmlFor="labFlag" className="text-sm font-medium flex items-center gap-1.5 cursor-pointer">
+                <div className={`flex items-center gap-2 mt-3 p-3 rounded-lg border ${selectedRecord.status === 'Validated' ? 'bg-slate-50 border-slate-200 text-slate-500' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
+                  <input 
+                    type="checkbox" 
+                    id="labFlag" 
+                    defaultChecked={selectedRecord.labFlagged}
+                    disabled={selectedRecord.status === 'Validated'}
+                    className={`w-4 h-4 rounded ${selectedRecord.status === 'Validated' ? 'text-slate-400 border-slate-300' : 'text-amber-600 border-amber-300 focus:ring-amber-500'}`} 
+                  />
+                  <label htmlFor="labFlag" className={`text-sm font-medium flex items-center gap-1.5 ${selectedRecord.status === 'Validated' ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
                     <FlaskConical className="w-4 h-4" /> Flag for Laboratory / Diagnostic Testing
                   </label>
                 </div>
@@ -341,23 +367,34 @@ export default function RHUNurseDashboard() {
             </div>
 
             <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex justify-end gap-3">
-              <button 
-                onClick={() => setSelectedRecord(null)}
-                className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-200 bg-slate-100 rounded-lg transition"
-              >
-                Cancel
-              </button>
-              <button 
-                className="px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 border border-red-200 rounded-lg transition flex items-center gap-1.5 bg-white"
-              >
-                <AlertCircle className="w-4 h-4" /> Return to BHW
-              </button>
-              <button 
-                onClick={() => handleApprove(selectedRecord.id)}
-                className="px-6 py-2 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition flex items-center gap-1.5"
-              >
-                <FileCheck className="w-4 h-4" /> Approve to FHSIS
-              </button>
+              {selectedRecord.status === 'Pending Review' ? (
+                <>
+                  <button 
+                    onClick={() => setSelectedRecord(null)}
+                    className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-200 bg-slate-100 rounded-lg transition"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    className="px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 border border-red-200 rounded-lg transition flex items-center gap-1.5 bg-white"
+                  >
+                    <AlertCircle className="w-4 h-4" /> Return to BHW
+                  </button>
+                  <button 
+                    onClick={() => handleApprove(selectedRecord.id)}
+                    className="px-6 py-2 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition flex items-center gap-1.5"
+                  >
+                    <FileCheck className="w-4 h-4" /> Approve to FHSIS
+                  </button>
+                </>
+              ) : (
+                <button 
+                  onClick={() => setSelectedRecord(null)}
+                  className="px-6 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200 bg-slate-200 rounded-lg transition"
+                >
+                  Close Record
+                </button>
+              )}
             </div>
           </div>
         </div>
