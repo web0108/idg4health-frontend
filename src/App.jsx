@@ -28,7 +28,7 @@ export default function App() {
         setIsAuthenticated(true);
         
       } else if (username === 'rhu_nurse') {
-        setCurrentUser({ role: 'RHU', location: 'RHU Main' });
+        setCurrentUser({ role: 'LHU', location: 'Local Health Unit' });
         setIsAuthenticated(true);
       } else if (username === 'cho_admin') {
         setCurrentUser({ role: 'CHO', location: 'City Health Office' });
@@ -76,7 +76,7 @@ export default function App() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="pl-10 w-full text-sm border-slate-300 rounded-lg p-2.5 border focus:ring-2 focus:ring-blue-500 outline-none" 
-                  placeholder="e.g. bhw_ampayon"
+                  placeholder="e.g. rhu_nurse"
                   required
                 />
               </div>
@@ -105,14 +105,20 @@ export default function App() {
             
             <div className="pt-4 mt-4 border-t border-slate-100 text-xs text-slate-500 text-center space-y-1">
               <p>Prototype Credentials (Password: <b>admin123</b>):</p>
-              <p>BHW: <b>bhw_[any_barangay]</b> (e.g., bhw_doongan)</p>
-              <p>RHU: <b>rhu_nurse</b> | CHO: <b>cho_admin</b></p>
+              <p>BHW: <b>bhw_[any_barangay]</b></p>
+              <p>LHU: <b>rhu_nurse</b> | CHO: <b>cho_admin</b></p>
             </div>
           </form>
         </div>
       </div>
     );
   }
+
+  // Define the display text for the top navigation badge based on the role
+  let roleDisplayName = '';
+  if (currentUser.role === 'BHW') roleDisplayName = 'Barangay Health Worker';
+  else if (currentUser.role === 'LHU') roleDisplayName = 'Local Health Unit';
+  else if (currentUser.role === 'CHO') roleDisplayName = 'City Health Office';
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
@@ -121,7 +127,7 @@ export default function App() {
           <Activity className="w-6 h-6 text-blue-600" />
           <span className="font-bold text-slate-800 text-lg">IDG4Health</span>
           <span className="ml-2 px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs font-medium border border-slate-200">
-            {currentUser.role === 'BHW' ? 'Barangay Health Worker' : currentUser.role} Portal
+            {roleDisplayName} Portal
           </span>
         </div>
         
@@ -136,7 +142,7 @@ export default function App() {
 
       <div className="flex-1 flex flex-col">
         {currentUser.role === 'BHW' && <BHWDataEntry currentUser={currentUser} />}
-        {currentUser.role === 'RHU' && <RHUNurseDashboard />}
+        {currentUser.role === 'LHU' && <RHUNurseDashboard />}
         {currentUser.role === 'CHO' && <CHODashboard />}
       </div>
     </div>
