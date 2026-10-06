@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, CircleMarker } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, CircleMarker, GeoJSON } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Map as MapIcon, Layers, Filter } from 'lucide-react';
 import L from 'leaflet';
@@ -13,10 +13,10 @@ L.Icon.Default.mergeOptions({
 });
 
 export default function CHODashboard() {
-  const [mapLayer, setMapLayer] = useState('pin'); // Toggles between 'pin' and 'heat'
+  const [mapLayer, setMapLayer] = useState('pin'); 
   
   // Coordinates for Butuan City Pilot Areas
-  const mapCenter = [8.9554, 125.5977]; // Centered near Ampayon
+  const mapCenter = [8.9554, 125.5977]; 
   
   // Mock spatial data representing encoded BHW consultations
   const spatialData = [
@@ -25,6 +25,49 @@ export default function CHODashboard() {
     { id: 3, lat: 8.9700, lng: 125.5700, disease: 'Hypertension', barangay: 'Tiniwisan', patients: 1 },
     { id: 4, lat: 8.9350, lng: 125.5500, disease: 'Acute Respiratory', barangay: 'Baan 3', patients: 2 },
   ];
+
+  // Simulated GeoJSON boundaries for the pilot barangays
+  const barangayBoundaries = {
+    type: "FeatureCollection",
+    features: [
+      {
+        type: "Feature",
+        properties: { name: "Ampayon", color: "#3b82f6" },
+        geometry: {
+          type: "Polygon",
+          coordinates: [[[125.58, 8.94], [125.61, 8.94], [125.61, 8.965], [125.58, 8.965], [125.58, 8.94]]]
+        }
+      },
+      {
+        type: "Feature",
+        properties: { name: "Tiniwisan", color: "#10b981" },
+        geometry: {
+          type: "Polygon",
+          coordinates: [[[125.55, 8.96], [125.575, 8.96], [125.575, 8.98], [125.55, 8.98], [125.55, 8.96]]]
+        }
+      },
+      {
+        type: "Feature",
+        properties: { name: "Baan 3", color: "#f59e0b" },
+        geometry: {
+          type: "Polygon",
+          coordinates: [[[125.53, 8.93], [125.55, 8.93], [125.55, 8.95], [125.53, 8.95], [125.53, 8.93]]]
+        }
+      }
+    ]
+  };
+
+  // Styling function for the GeoJSON polygons
+  const boundaryStyle = (feature) => {
+    return {
+      fillColor: feature.properties.color,
+      weight: 2,
+      opacity: 1,
+      color: 'white',
+      dashArray: '3',
+      fillOpacity: 0.3
+    };
+  };
 
   return (
     <div className="min-h-screen bg-slate-100 font-sans flex flex-col md:flex-row">
@@ -70,19 +113,37 @@ export default function CHODashboard() {
               <option>Baan 3</option>
             </select>
           </div>
+
+          {/* GeoJSON Legend */}
+          <div className="pt-4 border-t border-slate-100">
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Geofence Legend</h3>
+            <div className="space-y-2 text-sm text-slate-600">
+              <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-blue-500 opacity-70"></div> Ampayon Boundary</div>
+              <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-emerald-500 opacity-70"></div> Tiniwisan Boundary</div>
+              <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-amber-500 opacity-70"></div> Baan 3 Boundary</div>
+            </div>
+          </div>
         </div>
       </aside>
 
       {/* Main Web-GIS Map Interface */}
       <main className="flex-1 relative h-[calc(100vh-70px)] md:h-screen">
         <MapContainer center={mapCenter} zoom={13} className="w-full h-full z-0">
-          {/* OpenStreetMap Base Layer */}
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
 
-          {/* Render Pin Maps or Simulated Heat Maps based on selection */}
+          {/* Render the GeoJSON Barangay Boundaries */}
+          <GeoJSON 
+            data={barangayBoundaries} 
+            style={boundaryStyle}
+            onEachFeature={(feature, layer) => {
+              layer.bindPopup(`<b>${feature.properties.name}</b><br>Geofenced Pilot Area`);
+            }}
+          />
+
+          {/* Render Pin Maps or Simulated Heat Maps */}
           {spatialData.map((point) => {
             if (mapLayer === 'pin') {
               return (
@@ -97,7 +158,6 @@ export default function CHODashboard() {
                 </Marker>
               );
             } else {
-              // Simulated Heat Map using Radius and Opacity
               return (
                 <CircleMarker 
                   key={`heat-${point.id}`} 
@@ -105,7 +165,7 @@ export default function CHODashboard() {
                   radius={point.patients * 8} 
                   fillColor="red" 
                   color="transparent"
-                  fillOpacity={0.4}
+                  fillOpacity={0.6}
                 >
                   <Popup>Cluster Density: {point.patients} Cases ({point.disease})</Popup>
                 </CircleMarker>

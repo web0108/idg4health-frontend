@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
-import { CheckCircle, XCircle, FileSpreadsheet, LayoutDashboard, ClipboardCheck, Download } from 'lucide-react';
+import { CheckCircle, FileSpreadsheet, LayoutDashboard, ClipboardCheck, FileText } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 
 export default function RHUNurseDashboard() {
   const [activeTab, setActiveTab] = useState('validation');
   
-  // Mock data representing BHW submissions pushed from the local database
+  // Mock data representing BHW submissions
   const [records, setRecords] = useState([
-    { id: 'REC-001', patient: 'Maria Santos', age: 28, disease: 'Dengue', date: '2026-10-06', status: 'Pending Review' },
+    { id: 'REC-001', patient: 'Maria Santos', age: 28, disease: 'Dengue Clinical Case', date: '2026-10-06', status: 'Pending Review' },
     { id: 'REC-002', patient: 'Juan Dela Cruz', age: 45, disease: 'Hypertension', date: '2026-10-06', status: 'Pending Review' },
     { id: 'REC-003', patient: 'Ana Reyes', age: 5, disease: 'Acute Respiratory Infection', date: '2026-10-05', status: 'Approved' },
   ]);
@@ -15,9 +19,70 @@ export default function RHUNurseDashboard() {
     setRecords(records.map(rec => rec.id === id ? { ...rec, status: 'Approved' } : rec));
   };
 
-  // Automated MCT calculations (Sprint 3 objective)
+  // Automated MCT calculations
   const approvedRecords = records.filter(rec => rec.status === 'Approved');
   const totalApproved = approvedRecords.length;
+
+  // --- REPORT GENERATION LOGIC ---
+
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    
+    // Document Header
+    doc.setFontSize(16);
+    doc.text("Field Health Services Information System (FHSIS)", 14, 15);
+    doc.setFontSize(12);
+    doc.text("Monthly Consolidation Table (MCT) - Approved Cases", 14, 22);
+    doc.setFontSize(10);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 28);
+
+    // Prepare Table Data
+    const tableColumn = ["Record ID", "Patient Name", "Age", "Disease Class", "Date Encoded"];
+    const tableRows = [];
+
+    approvedRecords.forEach(record => {
+      const recordData = [record.id, record.patient, record.age, record.disease, record.date];
+      tableRows.push(recordData);
+    });
+
+    // Corrected AutoTable Generation
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 35,
+      theme: 'grid',
+      headStyles: { fillColor: [22, 163, 74] } // Emerald green header
+    });
+
+    doc.save(`FHSIS_MCT_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
+  const exportToExcel = async () => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Validated FHSIS Data');
+
+    // Define Columns
+    worksheet.columns = [
+      { header: 'Record ID', key: 'id', width: 15 },
+      { header: 'Patient Name', key: 'patient', width: 25 },
+      { header: 'Age', key: 'age', width: 10 },
+      { header: 'Disease Classification', key: 'disease', width: 30 },
+      { header: 'Date Encoded', key: 'date', width: 15 },
+    ];
+
+    // Add Style to Header
+    worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    worksheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF16A34A' } };
+
+    // Add Rows
+    approvedRecords.forEach(record => {
+      worksheet.addRow(record);
+    });
+
+    // Generate and Download
+    const buffer = await workbook.xlsx.writeBuffer();
+    saveAs(new Blob([buffer]), `FHSIS_MCT_Report_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
 
   return (
     <div className="min-h-screen bg-slate-100 font-sans flex flex-col md:flex-row">
@@ -108,10 +173,24 @@ export default function RHUNurseDashboard() {
                 <h2 className="text-2xl font-bold text-slate-800">Monthly Consolidation Table (MCT)</h2>
                 <p className="text-sm text-slate-500">Auto-calculated from validated BHW records.</p>
               </div>
-              <button className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-semibold shadow-sm transition">
-                <FileSpreadsheet className="w-4 h-4" />
-                One-Click FHSIS Export
-              </button>
+              
+              {/* EXPORT BUTTONS */}
+              <div className="flex gap-3">
+                <button 
+                  onClick={exportToPDF}
+                  className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-semibold shadow-sm transition"
+                >
+                  <FileText className="w-4 h-4" />
+                  PDF Report
+                </button>
+                <button 
+                  onClick={exportToExcel}
+                  className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-semibold shadow-sm transition"
+                >
+                  <FileSpreadsheet className="w-4 h-4" />
+                  Excel Report
+                </button>
+              </div>
             </header>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -130,7 +209,7 @@ export default function RHUNurseDashboard() {
                 <div className="space-y-3">
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-slate-700">Dengue Clinical Case</span>
-                    <span className="font-semibold">{approvedRecords.filter(r => r.disease === 'Dengue').length}</span>
+                    <span className="font-semibold">{approvedRecords.filter(r => r.disease === 'Dengue Clinical Case').length}</span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-slate-700">Acute Respiratory Infection</span>

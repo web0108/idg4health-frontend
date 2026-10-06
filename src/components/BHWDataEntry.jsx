@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Camera, CheckCircle, Wifi, WifiOff, Save, MapPin } from 'lucide-react';
+import { Scanner } from '@yudiel/react-qr-scanner';
 
 export default function BHWDataEntry() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -45,12 +46,35 @@ export default function BHWDataEntry() {
     };
   }, []);
 
-  const handleSimulateQRScan = () => {
-    setScanActive(false);
-    setPatient({
-      patientId: 'PT-2026-0891', name: 'Maria Santos', age: '28', sex: 'Female', address: 'Purok 3, Barangay Ampayon',
-    });
-    setStatusMessage('Patient demographic data auto-populated.');
+  // REAL QR SCANNER LOGIC
+  const handleScan = (detectedCodes) => {
+    if (detectedCodes && detectedCodes.length > 0) {
+      const scannedText = detectedCodes[0].rawValue;
+      setScanActive(false);
+
+      try {
+        // Try to read the QR code as a JSON Health Passport
+        const parsedData = JSON.parse(scannedText);
+        setPatient({
+          patientId: parsedData.patientId || 'N/A',
+          name: parsedData.name || 'N/A',
+          age: parsedData.age || 'N/A',
+          sex: parsedData.sex || 'N/A',
+          address: parsedData.address || 'N/A',
+        });
+        setStatusMessage('QR Health Passport successfully decoded.');
+      } catch (error) {
+        // Fallback: If you scan a normal website or text QR code, it uses the text as the ID
+        setPatient({
+          patientId: scannedText.substring(0, 15),
+          name: 'Juan Scanned',
+          age: '35',
+          sex: 'Male',
+          address: 'Purok 1, Ampayon',
+        });
+        setStatusMessage('Standard QR code detected. Mock profile applied.');
+      }
+    }
   };
 
   const handleInputChange = (e) => {
@@ -114,13 +138,12 @@ export default function BHWDataEntry() {
           </div>
 
           {scanActive && (
-            <div className="border-2 border-dashed border-blue-400 bg-slate-900 rounded-lg p-6 text-center text-white space-y-3">
-              <div className="w-40 h-40 border-2 border-emerald-400 rounded-lg mx-auto flex items-center justify-center animate-pulse">
-                <span className="text-xs text-emerald-300">Align QR Code Inside</span>
+            <div className="bg-slate-900 rounded-lg p-4 text-center text-white space-y-3">
+              <div className="rounded-lg overflow-hidden border-2 border-dashed border-blue-400">
+                {/* Real WebRTC Camera Component */}
+                <Scanner onScan={handleScan} />
               </div>
-              <button type="button" onClick={handleSimulateQRScan} className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-semibold">
-                Simulate Successful Scan
-              </button>
+              <p className="text-xs text-slate-300">Point a QR code at your webcam</p>
             </div>
           )}
 
