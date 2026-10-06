@@ -8,7 +8,6 @@ export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUserRole, setCurrentUserRole] = useState('');
   
-  // Login form state
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -17,7 +16,7 @@ export default function App() {
     e.preventDefault();
     setError('');
 
-    // Mock Authentication Routing Logic
+    // Standalone Mock Authentication
     if (password === 'admin123') {
       if (username === 'bhw_ampayon') {
         setCurrentUserRole('BHW');
@@ -43,7 +42,6 @@ export default function App() {
     setPassword('');
   };
 
-  // 1. Render Login Screen if not authenticated
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4 font-sans">
@@ -56,7 +54,7 @@ export default function App() {
           
           <form onSubmit={handleLogin} className="p-6 space-y-5">
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg text-center">
+              <div className="p-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg text-center font-medium">
                 {error}
               </div>
             )}
@@ -99,7 +97,6 @@ export default function App() {
               Login
             </button>
             
-            {/* Cheat sheet for your defense presentation */}
             <div className="pt-4 mt-4 border-t border-slate-100 text-xs text-slate-500 text-center">
               <p>Prototype Credentials (Password: <b>admin123</b>):</p>
               <p className="mt-1">BHW: <b>bhw_ampayon</b> | RHU: <b>rhu_nurse</b> | CHO: <b>cho_admin</b></p>
@@ -110,10 +107,8 @@ export default function App() {
     );
   }
 
-  // 2. Render Main Application if authenticated
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
-      {/* Authentic Top Navigation Bar replacing the Role Switcher */}
       <nav className="bg-white border-b border-slate-200 px-6 py-3 flex justify-between items-center shadow-sm z-50">
         <div className="flex items-center gap-2">
           <Activity className="w-6 h-6 text-blue-600" />
@@ -132,7 +127,6 @@ export default function App() {
         </button>
       </nav>
 
-      {/* Render the assigned role's interface */}
       <div className="flex-1 flex flex-col">
         {currentUserRole === 'BHW' && <BHWDataEntry />}
         {currentUserRole === 'RHU' && <RHUNurseDashboard />}
