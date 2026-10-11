@@ -84,11 +84,11 @@ export default function CHODashboard() {
           >
             <Users className="w-5 h-5" /> City-Wide Registry
           </button>
-          <button 
+         <button 
             onClick={() => setActiveMenu('reports')}
             className={`w-full flex items-center gap-3 px-6 py-3 text-sm font-medium transition ${activeMenu === 'reports' ? 'bg-blue-600 text-white' : 'hover:bg-slate-800 hover:text-white'}`}
           >
-            <FileSpreadsheet className="w-5 h-5" /> Master FHSIS Export
+            <FileSpreadsheet className="w-5 h-5" /> FHSIS Reports
           </button>
         </nav>
       </aside>
