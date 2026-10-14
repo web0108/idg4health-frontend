@@ -1,14 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Map as MapIcon, Activity, AlertTriangle, FileSpreadsheet, 
   MapPin, Layers, Filter, Calendar, Download, TrendingUp, Users, 
   Baby, Search, CheckCircle, FileText, DownloadCloud, Clock, PenTool, Users2, CalendarDays
 } from 'lucide-react';
-import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 
+// Helper component to automatically pan and zoom the map when Geographic Area changes
+function MapUpdater({ center, zoom }) {
+  const map = useMap();
+  useEffect(() => {
+    map.flyTo(center, zoom, { duration: 1.2 });
+  }, [center, zoom, map]);
+  return null;
+}
+
 export default function CHODashboard() {
-  const [activeMenu, setActiveMenu] = useState('reports');
+  const [activeMenu, setActiveMenu] = useState('spatial');
   const [mapLayer, setMapLayer] = useState('pin'); 
   const [filterBarangay, setFilterBarangay] = useState('All Butuan City');
   const [filterDisease, setFilterDisease] = useState('All FHSIS Categories');
@@ -26,7 +35,6 @@ export default function CHODashboard() {
   const [projectedPopulation, setProjectedPopulation] = useState('377,852');
   const [preparedBy, setPreparedBy] = useState('');
   const [approvedBy, setApprovedBy] = useState('');
-  // Added the missing Date Prepared state (Defaults to today's date YYYY-MM-DD format)
   const [datePrepared, setDatePrepared] = useState(new Date().toISOString().split('T')[0]);
 
   // Hard-coded mock database using REAL Butuan City GPS Coordinates
@@ -39,11 +47,23 @@ export default function CHODashboard() {
     { id: 'CHO-006', name: 'Mark Bautista', barangay: 'Ampayon', disease: 'Dengue Clinical Case', category: 'Disease Morbidity', date: '2026-10-01', status: 'Validated', lat: 8.9580, lng: 125.5990 },
   ];
 
-  // List of Barangays & Date Options
-  const butuanBarangays = [
-    'All Butuan City', 'Ampayon', 'Tiniwisan', 'Baan 3', 'Baan Riverside', 
-    'Bading', 'Bancasi', 'Doongan', 'Libertad', 'Mahogany', 'San Vicente', 'Villa Kananga'
-  ];
+  // Coordinates dictionary for auto-centering the map when a Barangay is selected
+  const barangayCoordinates = {
+    'All Butuan City': { center: [8.9490, 125.5520], zoom: 13 },
+    'Ampayon': { center: [8.9570, 125.5985], zoom: 15 },
+    'Tiniwisan': { center: [8.9654, 125.5777], zoom: 15 },
+    'Baan 3': { center: [8.9542, 125.5961], zoom: 15 },
+    'Baan Riverside': { center: [8.9515, 125.5480], zoom: 15 },
+    'Bading': { center: [8.9580, 125.5390], zoom: 15 },
+    'Bancasi': { center: [8.9510, 125.4850], zoom: 15 },
+    'Doongan': { center: [8.9530, 125.5250], zoom: 15 },
+    'Libertad': { center: [8.9415, 125.5038], zoom: 15 },
+    'Mahogany': { center: [8.9560, 125.5490], zoom: 15 },
+    'San Vicente': { center: [8.9150, 125.5420], zoom: 15 },
+    'Villa Kananga': { center: [8.9324, 125.5269], zoom: 15 }
+  };
+
+  const butuanBarangays = Object.keys(barangayCoordinates);
   const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   const quarters = ['Q1 (Jan-Mar)', 'Q2 (Apr-Jun)', 'Q3 (Jul-Sep)', 'Q4 (Oct-Dec)'];
   const years = ['2026', '2025', '2024'];
@@ -54,6 +74,9 @@ export default function CHODashboard() {
     const matchDisease = filterDisease === 'All FHSIS Categories' || record.disease === filterDisease;
     return matchBarangay && matchDisease;
   });
+
+  // Get active map view target
+  const currentMapView = barangayCoordinates[filterBarangay] || barangayCoordinates['All Butuan City'];
 
   // Export Preview Logic
   const getPreviewCount = () => {
@@ -84,7 +107,7 @@ export default function CHODashboard() {
           >
             <Users className="w-5 h-5" /> City-Wide Registry
           </button>
-         <button 
+          <button 
             onClick={() => setActiveMenu('reports')}
             className={`w-full flex items-center gap-3 px-6 py-3 text-sm font-medium transition ${activeMenu === 'reports' ? 'bg-blue-600 text-white' : 'hover:bg-slate-800 hover:text-white'}`}
           >
@@ -163,9 +186,23 @@ export default function CHODashboard() {
               <div className="space-y-5">
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">Visualization Layer</label>
-                  <div className="flex bg-slate-100 p-1 rounded-lg">
-                    <button onClick={() => setMapLayer('pin')} className={`flex-1 py-1.5 text-sm font-medium rounded-md transition ${mapLayer === 'pin' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>Pin Map</button>
-                    <button onClick={() => setMapLayer('heat')} className={`flex-1 py-1.5 text-sm font-medium rounded-md transition ${mapLayer === 'heat' ? 'bg-rose-500 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>Heat Map</button>
+                  <div className="flex bg-slate-100 p-1 rounded-lg gap-1">
+                    <button 
+                      onClick={() => setMapLayer('pin')} 
+                      className={`flex-1 py-1.5 text-sm font-medium rounded-md transition ${
+                        mapLayer === 'pin' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                      }`}
+                    >
+                      Pin Map
+                    </button>
+                    <button 
+                      onClick={() => setMapLayer('heat')} 
+                      className={`flex-1 py-1.5 text-sm font-medium rounded-md transition ${
+                        mapLayer === 'heat' ? 'bg-rose-500 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                      }`}
+                    >
+                      Heat Map
+                    </button>
                   </div>
                 </div>
 
@@ -214,18 +251,21 @@ export default function CHODashboard() {
             </div>
 
             <div className="flex-1 relative z-0">
-              <MapContainer center={[8.9475, 125.5406]} zoom={13} style={{ height: '100%', width: '100%' }}>
+              <MapContainer center={currentMapView.center} zoom={currentMapView.zoom} style={{ height: '100%', width: '100%' }}>
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; OpenStreetMap contributors' />
-                {filteredData.map(record => (
+                <MapUpdater center={currentMapView.center} zoom={currentMapView.zoom} />
+                
+                {/* PIN MAP LAYER: Crisp individual markers with popups */}
+                {mapLayer === 'pin' && filteredData.map(record => (
                   <CircleMarker
-                    key={record.id}
+                    key={`pin-${record.id}`}
                     center={[record.lat, record.lng]}
-                    radius={mapLayer === 'heat' ? 25 : 8}
+                    radius={8}
                     pathOptions={{
-                      color: record.disease.includes('Dengue') ? '#f43f5e' : '#3b82f6',
-                      fillColor: record.disease.includes('Dengue') ? '#f43f5e' : '#3b82f6',
-                      fillOpacity: mapLayer === 'heat' ? 0.5 : 0.9,
-                      weight: mapLayer === 'heat' ? 0 : 2
+                      color: '#ffffff',
+                      fillColor: record.disease.includes('Dengue') ? '#f43f5e' : '#2563eb',
+                      fillOpacity: 0.95,
+                      weight: 2
                     }}
                   >
                     <Popup>
@@ -237,16 +277,59 @@ export default function CHODashboard() {
                     </Popup>
                   </CircleMarker>
                 ))}
+
+                {/* HEAT MAP LAYER: Dual-ring thermal hotspot effect without popups */}
+                {mapLayer === 'heat' && filteredData.map(record => (
+                  <React.Fragment key={`heat-${record.id}`}>
+                    {/* Outer Thermal Halo */}
+                    <CircleMarker
+                      center={[record.lat, record.lng]}
+                      radius={38}
+                      pathOptions={{
+                        color: 'transparent',
+                        fillColor: record.disease.includes('Dengue') ? '#f43f5e' : '#f97316',
+                        fillOpacity: 0.25,
+                        weight: 0
+                      }}
+                    />
+                    {/* Inner Thermal Core */}
+                    <CircleMarker
+                      center={[record.lat, record.lng]}
+                      radius={18}
+                      pathOptions={{
+                        color: 'transparent',
+                        fillColor: record.disease.includes('Dengue') ? '#e11d48' : '#ea580c',
+                        fillOpacity: 0.55,
+                        weight: 0
+                      }}
+                    />
+                  </React.Fragment>
+                ))}
               </MapContainer>
 
               <div className="absolute bottom-6 right-6 bg-white/95 backdrop-blur px-4 py-3 rounded-xl shadow-lg border border-slate-200 z-[400] pointer-events-none">
-                <h3 className="text-xs font-bold text-slate-800 mb-2">Map Legend</h3>
-                <div className="flex items-center gap-2 text-xs text-slate-600 mb-1">
-                  <div className="w-3 h-3 rounded-full bg-rose-500 border border-white shadow-sm"></div> Outbreak / Dengue
-                </div>
-                <div className="flex items-center gap-2 text-xs text-slate-600">
-                  <div className="w-3 h-3 rounded-full bg-blue-500 border border-white shadow-sm"></div> Standard Morbidity
-                </div>
+                <h3 className="text-xs font-bold text-slate-800 mb-2">
+                  {mapLayer === 'pin' ? 'Pin Map Legend' : 'Heat Map Intensity'}
+                </h3>
+                {mapLayer === 'pin' ? (
+                  <>
+                    <div className="flex items-center gap-2 text-xs text-slate-600 mb-1">
+                      <div className="w-3 h-3 rounded-full bg-rose-500 border border-white shadow-sm"></div> Outbreak / Dengue
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-slate-600">
+                      <div className="w-3 h-3 rounded-full bg-blue-600 border border-white shadow-sm"></div> Standard Morbidity
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2 text-xs text-slate-600 mb-1">
+                      <div className="w-3 h-3 rounded-full bg-rose-600 opacity-80"></div> High Risk / Dengue Cluster
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-slate-600">
+                      <div className="w-3 h-3 rounded-full bg-orange-500 opacity-70"></div> Morbidity Density Zone
+                    </div>
+                  </>
+                )}
                 <div className="mt-2 pt-2 border-t border-slate-200 text-[10px] text-slate-400">
                   Showing {filteredData.length} records
                 </div>
@@ -300,7 +383,7 @@ export default function CHODashboard() {
           </div>
         )}
 
-        {/* 3. MASTER FHSIS EXPORT */}
+        {/* 3. FHSIS REPORTS */}
         {activeMenu === 'reports' && (
           <div className="flex-1 p-8 overflow-auto bg-slate-50">
             <div className="max-w-4xl mx-auto space-y-6 pb-12">
