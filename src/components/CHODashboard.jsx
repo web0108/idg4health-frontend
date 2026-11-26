@@ -1,39 +1,129 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Map as MapIcon, Activity, AlertTriangle, FileSpreadsheet,
-  MapPin, Layers, Filter, Calendar, Download, TrendingUp, Users,
+  MapPin, Layers, Filter, Download, TrendingUp, TrendingDown, Users,
   Baby, Search, CheckCircle, FileText, DownloadCloud, Clock, PenTool,
-  Users2, CalendarDays, RefreshCw, Building2, Flame, Eye, X, Printer
+  Users2, CalendarDays, RefreshCw, Building2, Flame, Eye, X, Printer,
+  Sliders, Phone, Navigation, ShieldAlert, Crosshair
 } from 'lucide-react';
 import {
-  MapContainer, TileLayer, CircleMarker, Marker, Popup, Tooltip, useMap
+  MapContainer, TileLayer, CircleMarker, Circle, Marker,
+  Popup, Tooltip, useMap, useMapEvents
 } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 // --- BUTUAN CITY BARANGAY HEALTH CENTERS (BHS) DIRECTORY ---
 const BARANGAY_HEALTH_CENTERS = [
-  { id: 'BHS-AMP', barangay: 'Ampayon', bhsName: 'Ampayon Barangay Health Station', lat: 8.9570, lng: 125.5985, population: 16420, district: 'East District', contact: '(085) 342-1101' },
-  { id: 'BHS-TIN', barangay: 'Tiniwisan', bhsName: 'Tiniwisan Barangay Health Station', lat: 8.9654, lng: 125.5777, population: 14890, district: 'East District', contact: '(085) 342-1102' },
-  { id: 'BHS-BA3', barangay: 'Baan 3', bhsName: 'Baan Km. 3 Barangay Health Station', lat: 8.9542, lng: 125.5961, population: 13250, district: 'East District', contact: '(085) 342-1103' },
-  { id: 'BHS-BAR', barangay: 'Baan Riverside', bhsName: 'Baan Riverside Health Center', lat: 8.9515, lng: 125.5480, population: 11840, district: 'Poblacion East', contact: '(085) 342-1104' },
-  { id: 'BHS-BAD', barangay: 'Bading', bhsName: 'Bading Barangay Health Station', lat: 8.9580, lng: 125.5390, population: 10910, district: 'North District', contact: '(085) 342-1105' },
-  { id: 'BHS-BAN', barangay: 'Bancasi', bhsName: 'Bancasi Barangay Health Station', lat: 8.9510, lng: 125.4850, population: 9820, district: 'West District', contact: '(085) 342-1106' },
-  { id: 'BHS-DOO', barangay: 'Doongan', bhsName: 'Doongan Barangay Health & Birthing Center', lat: 8.9530, lng: 125.5250, population: 19650, district: 'Central District', contact: '(085) 342-1107' },
-  { id: 'BHS-LIB', barangay: 'Libertad', bhsName: 'Libertad Barangay Health Station', lat: 8.9415, lng: 125.5038, population: 24310, district: 'West District', contact: '(085) 342-1108' },
-  { id: 'BHS-MAH', barangay: 'Mahogany', bhsName: 'Mahogany Barangay Health Station', lat: 8.9560, lng: 125.5490, population: 8940, district: 'Poblacion East', contact: '(085) 342-1109' },
-  { id: 'BHS-SNV', barangay: 'San Vicente', bhsName: 'San Vicente Barangay Health & Birthing Center', lat: 8.9150, lng: 125.5420, population: 21580, district: 'South District', contact: '(085) 342-1110' },
-  { id: 'BHS-VLK', barangay: 'Villa Kananga', bhsName: 'Villa Kananga Barangay Health Station', lat: 8.9324, lng: 125.5269, population: 14120, district: 'South District', contact: '(085) 342-1111' },
+  {
+    id: 'BHS-AMP', barangay: 'Ampayon', bhsName: 'Ampayon Barangay Health Station',
+    address: 'Purok 2, National Highway, Brgy. Ampayon, Butuan City',
+    hours: 'Mon–Fri: 8:00 AM – 5:00 PM | Sat: 8:00 AM – 12:00 PM',
+    contact: '(085) 342-1101 / 0917-810-2201',
+    lat: 8.9570, lng: 125.5985, population: 16420, district: 'East District',
+  },
+  {
+    id: 'BHS-TIN', barangay: 'Tiniwisan', bhsName: 'Tiniwisan Barangay Health Station',
+    address: 'BMC Compound Road, Brgy. Tiniwisan, Butuan City',
+    hours: 'Mon–Fri: 8:00 AM – 5:00 PM',
+    contact: '(085) 342-1102 / 0917-810-2202',
+    lat: 8.9654, lng: 125.5777, population: 14890, district: 'East District',
+  },
+  {
+    id: 'BHS-BA3', barangay: 'Baan 3', bhsName: 'Baan Km. 3 Barangay Health Station',
+    address: 'Purok 1, Km. 3 Highway, Brgy. Baan 3, Butuan City',
+    hours: 'Mon–Fri: 8:00 AM – 5:00 PM',
+    contact: '(085) 342-1103 / 0917-810-2203',
+    lat: 8.9542, lng: 125.5961, population: 13250, district: 'East District',
+  },
+  {
+    id: 'BHS-BAR', barangay: 'Baan Riverside', bhsName: 'Baan Riverside Health Center',
+    address: 'Purok 3, Riverside Road, Brgy. Baan Riverside, Butuan City',
+    hours: 'Mon–Fri: 8:00 AM – 5:00 PM',
+    contact: '(085) 342-1104 / 0917-810-2204',
+    lat: 8.9515, lng: 125.5480, population: 11840, district: 'Poblacion East',
+  },
+  {
+    id: 'BHS-BAD', barangay: 'Bading', bhsName: 'Bading Barangay Health Station',
+    address: 'Purok 4, Agusan Riverbank, Brgy. Bading, Butuan City',
+    hours: 'Mon–Fri: 8:00 AM – 5:00 PM',
+    contact: '(085) 342-1105 / 0917-810-2205',
+    lat: 8.9580, lng: 125.5390, population: 10910, district: 'North District',
+  },
+  {
+    id: 'BHS-BAN', barangay: 'Bancasi', bhsName: 'Bancasi Barangay Health Station',
+    address: 'Airport Access Road, Brgy. Bancasi, Butuan City',
+    hours: 'Mon–Fri: 8:00 AM – 5:00 PM',
+    contact: '(085) 342-1106 / 0917-810-2206',
+    lat: 8.9510, lng: 125.4850, population: 9820, district: 'West District',
+  },
+  {
+    id: 'BHS-DOO', barangay: 'Doongan', bhsName: 'Doongan Barangay Health & Birthing Center',
+    address: 'J.C. Aquino Ave., Brgy. Doongan, Butuan City',
+    hours: 'Mon–Sun: 24/7 Birthing | OPD 8:00 AM – 5:00 PM',
+    contact: '(085) 342-1107 / 0917-810-2207',
+    lat: 8.9530, lng: 125.5250, population: 19650, district: 'Central District',
+  },
+  {
+    id: 'BHS-LIB', barangay: 'Libertad', bhsName: 'Libertad Barangay Health Station',
+    address: 'Purok 6, Libertad Sports Complex Rd., Butuan City',
+    hours: 'Mon–Fri: 8:00 AM – 5:00 PM | Sat: 8:00 AM – 12:00 PM',
+    contact: '(085) 342-1108 / 0917-810-2208',
+    lat: 8.9415, lng: 125.5038, population: 24310, district: 'West District',
+  },
+  {
+    id: 'BHS-MAH', barangay: 'Mahogany', bhsName: 'Mahogany Barangay Health Station',
+    address: 'Purok 2, Mahogany St., Brgy. Mahogany, Butuan City',
+    hours: 'Mon–Fri: 8:00 AM – 5:00 PM',
+    contact: '(085) 342-1109 / 0917-810-2209',
+    lat: 8.9560, lng: 125.5490, population: 8940, district: 'Poblacion East',
+  },
+  {
+    id: 'BHS-SNV', barangay: 'San Vicente', bhsName: 'San Vicente Barangay Health & Birthing Center',
+    address: 'Purok 3, San Vicente Proper, Butuan City',
+    hours: 'Mon–Sun: 24/7 Birthing | OPD 8:00 AM – 5:00 PM',
+    contact: '(085) 342-1110 / 0917-810-2210',
+    lat: 8.9150, lng: 125.5420, population: 21580, district: 'South District',
+  },
+  {
+    id: 'BHS-VLK', barangay: 'Villa Kananga', bhsName: 'Villa Kananga Barangay Health Station',
+    address: 'Purok 2, Villa Kananga Road, Butuan City',
+    hours: 'Mon–Fri: 8:00 AM – 5:00 PM',
+    contact: '(085) 342-1111 / 0917-810-2211',
+    lat: 8.9324, lng: 125.5269, population: 14120, district: 'South District',
+  },
 ];
 
 const BARANGAY_VIEWPORTS = {
-  'All Butuan City': { center: [8.9490, 125.5520], zoom: 13 },
+  'All Butuan City': { center: [8.9470, 125.5480], zoom: 12 },
   ...Object.fromEntries(
     BARANGAY_HEALTH_CENTERS.map((bhs) => [
       bhs.barangay,
       { center: [bhs.lat, bhs.lng], zoom: 15 },
     ])
   ),
+};
+
+// Free OpenStreetMap tiles with CSS contrast modes (no API key required)
+const BASEMAP_STYLES = {
+  light: {
+    label: 'High-Contrast Light',
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '&copy; OpenStreetMap contributors',
+    themeClass: 'map-theme-light',
+  },
+  standard: {
+    label: 'Standard Streets',
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '&copy; OpenStreetMap contributors',
+    themeClass: '',
+  },
+  dark: {
+    label: 'Dark Surveillance',
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '&copy; OpenStreetMap contributors',
+    themeClass: 'map-theme-dark',
+  },
 };
 
 const FHSIS_SECTIONS = [
@@ -60,320 +150,162 @@ const QUARTERS = [
 // --- CITY-WIDE BASELINE VALIDATED RECORDS (Aligned with BHW Visit Schema) ---
 const BASELINE_CITY_RECORDS = [
   {
-    visitId: 'CHO-2026-001',
-    patientId: 'BHW-TIN-2026-0001',
+    visitId: 'CHO-2026-001', patientId: 'BHW-TIN-2026-0001',
     patientSnapshot: { name: 'Maria Santos', age: '28', sex: 'Female', address: 'Purok 2, Barangay Tiniwisan, Butuan City' },
-    barangay: 'Tiniwisan',
-    visitDate: '2026-11-06',
-    timestamp: '11/6/2026, 9:15:22 AM',
-    natureOfVisit: 'New Consultation',
-    fhsisSection: 'Section G: Infectious Diseases & Morbidity',
-    serviceSubtype: 'Dengue Clinical Case',
-    fpClientType: '',
-    bpDangerSign: false,
-    isPregnant: false,
-    temperature: '39.1',
-    bloodPressure: '110/70',
-    bmi: '22.9 (Normal)',
-    bmiCategory: 'Normal',
+    barangay: 'Tiniwisan', visitDate: '2026-11-24', timestamp: '11/24/2026, 9:15:22 AM',
+    natureOfVisit: 'New Consultation', fhsisSection: 'Section G: Infectious Diseases & Morbidity',
+    serviceSubtype: 'Dengue Clinical Case', fpClientType: '', bpDangerSign: false, isPregnant: false,
+    temperature: '39.1', bloodPressure: '110/70', bmi: '22.9 (Normal)', bmiCategory: 'Normal',
     chiefComplaint: 'High fever for 3 days, joint pain, mild rash on arms.',
-    actionTaken: 'Referred to RHU / Hospital',
-    referralRoute: 'BHS to RHU',
-    outcome: 'Referred to RHU / Hospital',
-    latitude: '8.966200',
-    longitude: '125.578400',
-    syncStatus: 'Validated',
-    source: 'CHO Baseline',
+    actionTaken: 'Referred to RHU / Hospital', referralRoute: 'BHS to RHU', outcome: 'Referred to RHU / Hospital',
+    latitude: '8.966800', longitude: '125.579100', syncStatus: 'Validated', source: 'CHO Baseline',
   },
   {
-    visitId: 'CHO-2026-010',
-    patientId: 'BHW-TIN-2026-0009',
+    visitId: 'CHO-2026-010', patientId: 'BHW-TIN-2026-0009',
     patientSnapshot: { name: 'Carlos Perez', age: '14', sex: 'Male', address: 'Purok 3, Barangay Tiniwisan, Butuan City' },
-    barangay: 'Tiniwisan',
-    visitDate: '2026-11-11',
-    timestamp: '11/11/2026, 2:10:00 PM',
-    natureOfVisit: 'New Consultation',
-    fhsisSection: 'Section G: Infectious Diseases & Morbidity',
-    serviceSubtype: 'Dengue Clinical Case',
-    fpClientType: '',
-    bpDangerSign: false,
-    isPregnant: false,
-    temperature: '39.0',
-    bloodPressure: '100/65',
-    bmi: '19.1 (Normal)',
-    bmiCategory: 'Normal',
+    barangay: 'Tiniwisan', visitDate: '2026-11-21', timestamp: '11/21/2026, 2:10:00 PM',
+    natureOfVisit: 'New Consultation', fhsisSection: 'Section G: Infectious Diseases & Morbidity',
+    serviceSubtype: 'Dengue Clinical Case', fpClientType: '', bpDangerSign: false, isPregnant: false,
+    temperature: '39.0', bloodPressure: '100/65', bmi: '19.1 (Normal)', bmiCategory: 'Normal',
     chiefComplaint: 'Febrile for 2 days with headache and petechial rash.',
-    actionTaken: 'Referred to RHU / Hospital',
-    referralRoute: 'BHS to RHU',
-    outcome: 'Referred to RHU / Hospital',
-    latitude: '8.964800',
-    longitude: '125.576800',
-    syncStatus: 'Validated',
-    source: 'CHO Baseline',
+    actionTaken: 'Referred to RHU / Hospital', referralRoute: 'BHS to RHU', outcome: 'Referred to RHU / Hospital',
+    latitude: '8.964500', longitude: '125.576200', syncStatus: 'Validated', source: 'CHO Baseline',
   },
   {
-    visitId: 'CHO-2026-002',
-    patientId: 'BHW-AMP-2026-0010',
+    visitId: 'CHO-2026-002', patientId: 'BHW-AMP-2026-0010',
     patientSnapshot: { name: 'Mark Bautista', age: '34', sex: 'Male', address: 'Purok 5, Barangay Ampayon, Butuan City' },
-    barangay: 'Ampayon',
-    visitDate: '2026-11-10',
-    timestamp: '11/10/2026, 10:05:00 AM',
-    natureOfVisit: 'New Consultation',
-    fhsisSection: 'Section G: Infectious Diseases & Morbidity',
-    serviceSubtype: 'Dengue Clinical Case',
-    fpClientType: '',
-    bpDangerSign: false,
-    isPregnant: false,
-    temperature: '38.9',
-    bloodPressure: '115/75',
-    bmi: '23.4 (Normal)',
-    bmiCategory: 'Normal',
+    barangay: 'Ampayon', visitDate: '2026-11-25', timestamp: '11/25/2026, 10:05:00 AM',
+    natureOfVisit: 'New Consultation', fhsisSection: 'Section G: Infectious Diseases & Morbidity',
+    serviceSubtype: 'Dengue Clinical Case', fpClientType: '', bpDangerSign: false, isPregnant: false,
+    temperature: '38.9', bloodPressure: '115/75', bmi: '23.4 (Normal)', bmiCategory: 'Normal',
     chiefComplaint: 'Persistent fever, retro-orbital pain, nausea.',
-    actionTaken: 'Referred to RHU / Hospital',
-    referralRoute: 'BHS to RHU',
-    outcome: 'Referred to RHU / Hospital',
-    latitude: '8.958200',
-    longitude: '125.599400',
-    syncStatus: 'Validated',
-    source: 'CHO Baseline',
+    actionTaken: 'Referred to RHU / Hospital', referralRoute: 'BHS to RHU', outcome: 'Referred to RHU / Hospital',
+    latitude: '8.958500', longitude: '125.600100', syncStatus: 'Validated', source: 'CHO Baseline',
   },
   {
-    visitId: 'CHO-2026-003',
-    patientId: 'BHW-AMP-2026-0011',
+    visitId: 'CHO-2026-003', patientId: 'BHW-AMP-2026-0011',
     patientSnapshot: { name: 'Elena Villanueva', age: '19', sex: 'Female', address: 'Purok 3, Barangay Ampayon, Butuan City' },
-    barangay: 'Ampayon',
-    visitDate: '2026-11-15',
-    timestamp: '11/15/2026, 1:20:00 PM',
-    natureOfVisit: 'Follow-up Visit',
-    fhsisSection: 'Section G: Infectious Diseases & Morbidity',
-    serviceSubtype: 'Dengue Clinical Case',
-    fpClientType: '',
-    bpDangerSign: false,
-    isPregnant: false,
-    temperature: '38.6',
-    bloodPressure: '105/70',
-    bmi: '20.5 (Normal)',
-    bmiCategory: 'Normal',
+    barangay: 'Ampayon', visitDate: '2026-11-22', timestamp: '11/22/2026, 1:20:00 PM',
+    natureOfVisit: 'Follow-up Visit', fhsisSection: 'Section G: Infectious Diseases & Morbidity',
+    serviceSubtype: 'Dengue Clinical Case', fpClientType: '', bpDangerSign: false, isPregnant: false,
+    temperature: '38.6', bloodPressure: '105/70', bmi: '20.5 (Normal)', bmiCategory: 'Normal',
     chiefComplaint: 'Day 4 fever monitoring; platelet count ordered.',
-    actionTaken: 'Routine Monitoring / Advised',
-    referralRoute: 'None',
-    outcome: 'Under Monitoring',
-    latitude: '8.957600',
-    longitude: '125.597800',
-    syncStatus: 'Validated',
-    source: 'CHO Baseline',
+    actionTaken: 'Routine Monitoring / Advised', referralRoute: 'None', outcome: 'Under Monitoring',
+    latitude: '8.957400', longitude: '125.597900', syncStatus: 'Validated', source: 'CHO Baseline',
   },
   {
-    visitId: 'CHO-2026-011',
-    patientId: 'BHW-AMP-2026-0012',
+    visitId: 'CHO-2026-011', patientId: 'BHW-AMP-2026-0012',
     patientSnapshot: { name: 'Jerome Alcantara', age: '22', sex: 'Male', address: 'Purok 4, Barangay Ampayon, Butuan City' },
-    barangay: 'Ampayon',
-    visitDate: '2026-11-19',
-    timestamp: '11/19/2026, 3:40:00 PM',
-    natureOfVisit: 'New Consultation',
-    fhsisSection: 'Section G: Infectious Diseases & Morbidity',
-    serviceSubtype: 'Dengue Clinical Case',
-    fpClientType: '',
-    bpDangerSign: false,
-    isPregnant: false,
-    temperature: '39.4',
-    bloodPressure: '110/70',
-    bmi: '21.7 (Normal)',
-    bmiCategory: 'Normal',
+    barangay: 'Ampayon', visitDate: '2026-11-23', timestamp: '11/23/2026, 3:40:00 PM',
+    natureOfVisit: 'New Consultation', fhsisSection: 'Section G: Infectious Diseases & Morbidity',
+    serviceSubtype: 'Dengue Clinical Case', fpClientType: '', bpDangerSign: false, isPregnant: false,
+    temperature: '39.4', bloodPressure: '110/70', bmi: '21.7 (Normal)', bmiCategory: 'Normal',
     chiefComplaint: 'Sudden high-grade fever, muscle aches, positive NS1 test.',
-    actionTaken: 'Referred to RHU / Hospital',
-    referralRoute: 'BHS to RHU',
-    outcome: 'Referred to RHU / Hospital',
-    latitude: '8.956500',
-    longitude: '125.598900',
-    syncStatus: 'Validated',
-    source: 'CHO Baseline',
+    actionTaken: 'Referred to RHU / Hospital', referralRoute: 'BHS to RHU', outcome: 'Referred to RHU / Hospital',
+    latitude: '8.956200', longitude: '125.599400', syncStatus: 'Validated', source: 'CHO Baseline',
   },
   {
-    visitId: 'CHO-2026-004',
-    patientId: 'BHW-BA3-2026-0003',
+    visitId: 'CHO-2026-013', patientId: 'BHW-MAH-2026-0015',
+    patientSnapshot: { name: 'Rico Mendoza', age: '27', sex: 'Male', address: 'Upper Mahogany Sitios, Butuan City' },
+    barangay: 'Mahogany', visitDate: '2026-11-25', timestamp: '11/25/2026, 11:30:00 AM',
+    natureOfVisit: 'New Consultation', fhsisSection: 'Section G: Infectious Diseases & Morbidity',
+    serviceSubtype: 'Dengue Clinical Case', fpClientType: '', bpDangerSign: false, isPregnant: false,
+    temperature: '39.2', bloodPressure: '110/70', bmi: '22.1 (Normal)', bmiCategory: 'Normal',
+    chiefComplaint: 'High fever and severe joint pain from hillside purok.',
+    actionTaken: 'Referred to RHU / Hospital', referralRoute: 'BHS to RHU', outcome: 'Referred to RHU / Hospital',
+    latitude: '8.962800', longitude: '125.560500', syncStatus: 'Validated', source: 'CHO Baseline',
+  },
+  {
+    visitId: 'CHO-2026-004', patientId: 'BHW-BA3-2026-0003',
     patientSnapshot: { name: 'Ana Reyes', age: '24', sex: 'Female', address: 'Purok 1, Barangay Baan 3, Butuan City' },
-    barangay: 'Baan 3',
-    visitDate: '2026-11-14',
-    timestamp: '11/14/2026, 2:45:10 PM',
-    natureOfVisit: 'Follow-up Visit',
-    fhsisSection: 'Section B: Maternal Care',
-    serviceSubtype: 'Prenatal Care (ANC Visit)',
-    fpClientType: '',
-    bpDangerSign: false,
-    isPregnant: true,
-    temperature: '36.8',
-    bloodPressure: '110/80',
-    bmi: '24.2 (Normal)',
-    bmiCategory: 'Normal',
+    barangay: 'Baan 3', visitDate: '2026-11-16', timestamp: '11/16/2026, 2:45:10 PM',
+    natureOfVisit: 'Follow-up Visit', fhsisSection: 'Section B: Maternal Care',
+    serviceSubtype: 'Prenatal Care (ANC Visit)', fpClientType: '', bpDangerSign: false, isPregnant: true,
+    temperature: '36.8', bloodPressure: '110/80', bmi: '24.2 (Normal)', bmiCategory: 'Normal',
     chiefComplaint: 'Routine 3rd prenatal check-up; Iron/Folic acid dispensed.',
-    actionTaken: 'Given Immunization / Supplement',
-    referralRoute: 'None',
-    outcome: 'Under Monitoring',
-    latitude: '8.953500',
-    longitude: '125.595200',
-    syncStatus: 'Validated',
-    source: 'CHO Baseline',
+    actionTaken: 'Given Immunization / Supplement', referralRoute: 'None', outcome: 'Under Monitoring',
+    latitude: '8.951800', longitude: '125.581500', syncStatus: 'Validated', source: 'CHO Baseline',
   },
   {
-    visitId: 'CHO-2026-005',
-    patientId: 'BHW-LIB-2026-0004',
+    visitId: 'CHO-2026-005', patientId: 'BHW-LIB-2026-0004',
     patientSnapshot: { name: 'Pedro Gomez', age: '52', sex: 'Male', address: 'Purok 6, Barangay Libertad, Butuan City' },
-    barangay: 'Libertad',
-    visitDate: '2026-11-18',
-    timestamp: '11/18/2026, 8:40:00 AM',
-    natureOfVisit: 'New Consultation',
-    fhsisSection: 'Section G: Infectious Diseases & Morbidity',
-    serviceSubtype: 'Acute Respiratory Infection',
-    fpClientType: '',
-    bpDangerSign: false,
-    isPregnant: false,
-    temperature: '37.9',
-    bloodPressure: '130/85',
-    bmi: '26.8 (Overweight)',
-    bmiCategory: 'Overweight',
+    barangay: 'Libertad', visitDate: '2026-11-18', timestamp: '11/18/2026, 8:40:00 AM',
+    natureOfVisit: 'New Consultation', fhsisSection: 'Section G: Infectious Diseases & Morbidity',
+    serviceSubtype: 'Acute Respiratory Infection', fpClientType: '', bpDangerSign: false, isPregnant: false,
+    temperature: '37.9', bloodPressure: '130/85', bmi: '26.8 (Overweight)', bmiCategory: 'Overweight',
     chiefComplaint: 'Productive cough and mild dyspnea for 4 days.',
-    actionTaken: 'Given Medication / First Aid',
-    referralRoute: 'None',
-    outcome: 'Under Monitoring',
-    latitude: '8.942200',
-    longitude: '125.504800',
-    syncStatus: 'Validated',
-    source: 'CHO Baseline',
+    actionTaken: 'Given Medication / First Aid', referralRoute: 'None', outcome: 'Under Monitoring',
+    latitude: '8.942200', longitude: '125.504800', syncStatus: 'Validated', source: 'CHO Baseline',
   },
   {
-    visitId: 'CHO-2026-006',
-    patientId: 'BHW-VLK-2026-0005',
+    visitId: 'CHO-2026-006', patientId: 'BHW-VLK-2026-0005',
     patientSnapshot: { name: 'Liza Mercado', age: '31', sex: 'Female', address: 'Purok 2, Barangay Villa Kananga, Butuan City' },
-    barangay: 'Villa Kananga',
-    visitDate: '2026-11-20',
-    timestamp: '11/20/2026, 11:10:00 AM',
-    natureOfVisit: 'New Consultation',
-    fhsisSection: 'Section G: Infectious Diseases & Morbidity',
-    serviceSubtype: 'Dengue Clinical Case',
-    fpClientType: '',
-    bpDangerSign: false,
-    isPregnant: false,
-    temperature: '39.3',
-    bloodPressure: '100/70',
-    bmi: '21.8 (Normal)',
-    bmiCategory: 'Normal',
+    barangay: 'Villa Kananga', visitDate: '2026-11-20', timestamp: '11/20/2026, 11:10:00 AM',
+    natureOfVisit: 'New Consultation', fhsisSection: 'Section G: Infectious Diseases & Morbidity',
+    serviceSubtype: 'Dengue Clinical Case', fpClientType: '', bpDangerSign: false, isPregnant: false,
+    temperature: '39.3', bloodPressure: '100/70', bmi: '21.8 (Normal)', bmiCategory: 'Normal',
     chiefComplaint: 'Acute febrile illness, body malaise, positive tourniquet test.',
-    actionTaken: 'Referred to RHU / Hospital',
-    referralRoute: 'BHS to RHU',
-    outcome: 'Referred to RHU / Hospital',
-    latitude: '8.933100',
-    longitude: '125.527600',
-    syncStatus: 'Validated',
-    source: 'CHO Baseline',
+    actionTaken: 'Referred to RHU / Hospital', referralRoute: 'BHS to RHU', outcome: 'Referred to RHU / Hospital',
+    latitude: '8.933100', longitude: '125.527600', syncStatus: 'Validated', source: 'CHO Baseline',
   },
   {
-    visitId: 'CHO-2026-007',
-    patientId: 'BHW-DOO-2026-0006',
+    visitId: 'CHO-2026-007', patientId: 'BHW-DOO-2026-0006',
     patientSnapshot: { name: 'Roberto Navarro', age: '64', sex: 'Male', address: 'Purok 4, Barangay Doongan, Butuan City' },
-    barangay: 'Doongan',
-    visitDate: '2026-11-21',
-    timestamp: '11/21/2026, 9:30:00 AM',
-    natureOfVisit: 'Follow-up Visit',
-    fhsisSection: 'Section E: Non-Communicable Diseases (PhilPEN)',
-    serviceSubtype: 'Hypertension (PhilPEN)',
-    fpClientType: '',
-    bpDangerSign: false,
-    isPregnant: false,
-    temperature: '36.7',
-    bloodPressure: '150/92',
-    bmi: '29.4 (Overweight)',
-    bmiCategory: 'Overweight',
+    barangay: 'Doongan', visitDate: '2026-11-21', timestamp: '11/21/2026, 9:30:00 AM',
+    natureOfVisit: 'Follow-up Visit', fhsisSection: 'Section E: Non-Communicable Diseases (PhilPEN)',
+    serviceSubtype: 'Hypertension (PhilPEN)', fpClientType: '', bpDangerSign: false, isPregnant: false,
+    temperature: '36.7', bloodPressure: '150/92', bmi: '29.4 (Overweight)', bmiCategory: 'Overweight',
     chiefComplaint: 'BP monitoring and antihypertensive refill (Amlodipine).',
-    actionTaken: 'Given Medication / First Aid',
-    referralRoute: 'None',
-    outcome: 'Under Monitoring',
-    latitude: '8.953800',
-    longitude: '125.526200',
-    syncStatus: 'Validated',
-    source: 'CHO Baseline',
+    actionTaken: 'Given Medication / First Aid', referralRoute: 'None', outcome: 'Under Monitoring',
+    latitude: '8.953800', longitude: '125.526200', syncStatus: 'Validated', source: 'CHO Baseline',
   },
   {
-    visitId: 'CHO-2026-012',
-    patientId: 'BHW-DOO-2026-0014',
+    visitId: 'CHO-2026-012', patientId: 'BHW-DOO-2026-0014',
     patientSnapshot: { name: 'Lourdes Salazar', age: '58', sex: 'Female', address: 'Purok 2, Barangay Doongan, Butuan City' },
-    barangay: 'Doongan',
-    visitDate: '2026-11-23',
-    timestamp: '11/23/2026, 10:15:00 AM',
-    natureOfVisit: 'Follow-up Visit',
-    fhsisSection: 'Section E: Non-Communicable Diseases (PhilPEN)',
-    serviceSubtype: 'Type II Diabetes (PhilPEN)',
-    fpClientType: '',
-    bpDangerSign: false,
-    isPregnant: false,
-    temperature: '36.6',
-    bloodPressure: '138/86',
-    bmi: '28.1 (Overweight)',
-    bmiCategory: 'Overweight',
+    barangay: 'Doongan', visitDate: '2026-11-23', timestamp: '11/23/2026, 10:15:00 AM',
+    natureOfVisit: 'Follow-up Visit', fhsisSection: 'Section E: Non-Communicable Diseases (PhilPEN)',
+    serviceSubtype: 'Type II Diabetes (PhilPEN)', fpClientType: '', bpDangerSign: false, isPregnant: false,
+    temperature: '36.6', bloodPressure: '138/86', bmi: '28.1 (Overweight)', bmiCategory: 'Overweight',
     chiefComplaint: 'Routine FBS monitoring and oral hypoglycemic follow-up.',
-    actionTaken: 'Given Medication / First Aid',
-    referralRoute: 'None',
-    outcome: 'Under Monitoring',
-    latitude: '8.952700',
-    longitude: '125.524600',
-    syncStatus: 'Validated',
-    source: 'CHO Baseline',
+    actionTaken: 'Given Medication / First Aid', referralRoute: 'None', outcome: 'Under Monitoring',
+    latitude: '8.952700', longitude: '125.524600', syncStatus: 'Validated', source: 'CHO Baseline',
   },
   {
-    visitId: 'CHO-2026-008',
-    patientId: 'BHW-SNV-2026-0007',
+    visitId: 'CHO-2026-008', patientId: 'BHW-SNV-2026-0007',
     patientSnapshot: { name: 'Clarissa Dizon', age: '26', sex: 'Female', address: 'Purok 3, Barangay San Vicente, Butuan City' },
-    barangay: 'San Vicente',
-    visitDate: '2026-11-22',
-    timestamp: '11/22/2026, 3:05:00 PM',
-    natureOfVisit: 'New Consultation',
-    fhsisSection: 'Section A: Family Planning',
-    serviceSubtype: 'Pills (POP / COC)',
-    fpClientType: 'New Acceptor',
-    bpDangerSign: false,
-    isPregnant: false,
-    temperature: '36.6',
-    bloodPressure: '118/78',
-    bmi: '22.0 (Normal)',
-    bmiCategory: 'Normal',
+    barangay: 'San Vicente', visitDate: '2026-11-14', timestamp: '11/14/2026, 3:05:00 PM',
+    natureOfVisit: 'New Consultation', fhsisSection: 'Section A: Family Planning',
+    serviceSubtype: 'Pills (POP / COC)', fpClientType: 'New Acceptor', bpDangerSign: false, isPregnant: false,
+    temperature: '36.6', bloodPressure: '118/78', bmi: '22.0 (Normal)', bmiCategory: 'Normal',
     chiefComplaint: 'Family planning counseling and initial pills supply.',
-    actionTaken: 'Given Medication / First Aid',
-    referralRoute: 'None',
-    outcome: 'Completed',
-    latitude: '8.916200',
-    longitude: '125.543400',
-    syncStatus: 'Validated',
-    source: 'CHO Baseline',
+    actionTaken: 'Given Medication / First Aid', referralRoute: 'None', outcome: 'Completed',
+    latitude: '8.916200', longitude: '125.543400', syncStatus: 'Validated', source: 'CHO Baseline',
   },
   {
-    visitId: 'CHO-2026-009',
-    patientId: 'BHW-DOO-2026-0008',
+    visitId: 'CHO-2026-009', patientId: 'BHW-DOO-2026-0008',
     patientSnapshot: { name: 'Mateo Lim', age: '1', sex: 'Male', address: 'Purok 1, Barangay Doongan, Butuan City' },
-    barangay: 'Doongan',
-    visitDate: '2026-10-18',
-    timestamp: '10/18/2026, 10:15:00 AM',
-    natureOfVisit: 'Follow-up Visit',
-    fhsisSection: 'Section C: Child Care & Immunization',
-    serviceSubtype: 'Immunization (MMR / FIC)',
-    fpClientType: '',
-    bpDangerSign: false,
-    isPregnant: false,
-    temperature: '36.8',
-    bloodPressure: '90/60',
-    bmi: '16.9 (Underweight)',
-    bmiCategory: 'Underweight',
+    barangay: 'Doongan', visitDate: '2026-10-18', timestamp: '10/18/2026, 10:15:00 AM',
+    natureOfVisit: 'Follow-up Visit', fhsisSection: 'Section C: Child Care & Immunization',
+    serviceSubtype: 'Immunization (MMR / FIC)', fpClientType: '', bpDangerSign: false, isPregnant: false,
+    temperature: '36.8', bloodPressure: '90/60', bmi: '16.9 (Underweight)', bmiCategory: 'Underweight',
     chiefComplaint: 'MMR Dose 1 and routine growth check.',
-    actionTaken: 'Given Immunization / Supplement',
-    referralRoute: 'None',
-    outcome: 'Completed',
-    latitude: '8.952400',
-    longitude: '125.524100',
-    syncStatus: 'Validated',
-    source: 'CHO Baseline',
+    actionTaken: 'Given Immunization / Supplement', referralRoute: 'None', outcome: 'Completed',
+    latitude: '8.952400', longitude: '125.524100', syncStatus: 'Validated', source: 'CHO Baseline',
   },
 ];
 
-// --- HELPER UTILITIES ---
+// --- SPATIAL & EPIDEMIOLOGICAL HELPERS ---
+const haversineKm = (lat1, lng1, lat2, lng2) => {
+  const toRad = (deg) => (deg * Math.PI) / 180;
+  const R = 6371;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+};
+
 const extractBarangayFromAddress = (address = '') => {
   const lower = address.toLowerCase();
   const matched = BARANGAY_HEALTH_CENTERS.find((bhs) =>
@@ -401,8 +333,23 @@ const getConsultationAgeGroup = (age) => {
   return '60+';
 };
 
-// --- SMOOTH CANVAS THERMAL HEATMAP LAYER (Blue -> Green -> Yellow -> Orange -> Red) ---
-function ThermalHeatmapLayer({ cases }) {
+const daysAgoFromToday = (isoDate) => {
+  if (!isoDate) return 9999;
+  const now = new Date();
+  const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const rec = new Date(`${isoDate}T00:00:00`);
+  return Math.floor((todayMidnight - rec) / (1000 * 60 * 60 * 24));
+};
+
+// --- CANVAS THERMAL HEAT MAP (Weighted Case Density & Normalized Attack Rate + Zoom Adaptive) ---
+function ThermalHeatmapLayer({
+  cases,
+  heatMode,
+  opacity,
+  intensityScale,
+  zoomAdaptive,
+  barangayPopMap,
+}) {
   const map = useMap();
 
   useEffect(() => {
@@ -411,28 +358,27 @@ function ThermalHeatmapLayer({ cases }) {
     canvas.style.top = '0';
     canvas.style.left = '0';
     canvas.style.pointerEvents = 'none';
-    canvas.style.opacity = '0.74';
+    canvas.style.opacity = String(opacity);
 
     const overlayPane = map.getPanes().overlayPane;
     overlayPane.appendChild(canvas);
 
-    // 1. Build 256-step rainbow thermal color lookup table (Blue -> Green -> Yellow -> Orange -> Red)
+    // 256-step smooth thermal spectrum (Blue -> Green -> Yellow -> Orange -> Red)
     const gradCanvas = document.createElement('canvas');
     gradCanvas.width = 1;
     gradCanvas.height = 256;
     const gCtx = gradCanvas.getContext('2d');
     const ramp = gCtx.createLinearGradient(0, 0, 0, 256);
-    ramp.addColorStop(0.0, 'rgba(37, 99, 235, 0)');      // Transparent outer edge
-    ramp.addColorStop(0.16, 'rgba(59, 130, 246, 0.72)'); // Blue (Low Density)
-    ramp.addColorStop(0.36, 'rgba(34, 197, 94, 0.82)');  // Green (Moderate)
-    ramp.addColorStop(0.58, 'rgba(250, 204, 21, 0.88)'); // Yellow (Elevated)
-    ramp.addColorStop(0.78, 'rgba(249, 115, 22, 0.94)'); // Orange (High)
-    ramp.addColorStop(1.0, 'rgba(239, 68, 68, 0.98)');   // Red (Critical Hotspot)
+    ramp.addColorStop(0.0, 'rgba(37, 99, 235, 0)');
+    ramp.addColorStop(0.15, 'rgba(59, 130, 246, 0.72)'); // Blue
+    ramp.addColorStop(0.36, 'rgba(34, 197, 94, 0.82)');  // Green
+    ramp.addColorStop(0.58, 'rgba(250, 204, 21, 0.88)'); // Yellow
+    ramp.addColorStop(0.78, 'rgba(249, 115, 22, 0.94)'); // Orange
+    ramp.addColorStop(1.0, 'rgba(239, 68, 68, 0.98)');   // Red
     gCtx.fillStyle = ramp;
     gCtx.fillRect(0, 0, 1, 256);
     const colorLut = gCtx.getImageData(0, 0, 1, 256).data;
 
-    // 2. Helper to build a soft Gaussian-like radial alpha brush
     const createBrush = (radius) => {
       const size = radius * 2;
       const brush = document.createElement('canvas');
@@ -442,7 +388,7 @@ function ThermalHeatmapLayer({ cases }) {
       const radGrad = bCtx.createRadialGradient(radius, radius, 0, radius, radius, radius);
       radGrad.addColorStop(0.0, 'rgba(0, 0, 0, 1)');
       radGrad.addColorStop(0.35, 'rgba(0, 0, 0, 0.65)');
-      radGrad.addColorStop(0.68, 'rgba(0, 0, 0, 0.25)');
+      radGrad.addColorStop(0.68, 'rgba(0, 0, 0, 0.24)');
       radGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0)');
       bCtx.fillStyle = radGrad;
       bCtx.fillRect(0, 0, size, size);
@@ -457,18 +403,23 @@ function ThermalHeatmapLayer({ cases }) {
       L.DomUtil.setPosition(canvas, topLeft);
       canvas.width = size.x;
       canvas.height = size.y;
+      canvas.style.opacity = String(opacity);
 
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
       ctx.clearRect(0, 0, size.x, size.y);
 
       if (!cases || cases.length === 0) return;
 
-      // Scale cloud radius naturally with map zoom so clouds stay lush and continuous
       const zoom = map.getZoom();
-      const radius = Math.max(48, Math.min(115, Math.round(58 + (zoom - 12) * 14)));
+      const radius = zoomAdaptive
+        ? Math.max(42, Math.min(120, Math.round(52 + (zoom - 12) * 15)))
+        : 64;
+      const zoomIntensityFactor = zoomAdaptive
+        ? Math.max(0.75, Math.min(1.25, 1 + (13 - zoom) * 0.08))
+        : 1.0;
+
       const brush = createBrush(radius);
 
-      // Accumulate intensity alpha for every reported case
       cases.forEach((rec) => {
         const lat = parseFloat(rec.latitude);
         const lng = parseFloat(rec.longitude);
@@ -479,16 +430,22 @@ function ThermalHeatmapLayer({ cases }) {
           return;
         }
 
-        // Higher epidemiological weight for Dengue / Infectious outbreaks so clusters glow red
-        const isDengue = (rec.serviceSubtype || '').includes('Dengue');
-        const isInfectious = rec.fhsisSection === 'Section G: Infectious Diseases & Morbidity';
-        const weight = isDengue ? 0.56 : isInfectious ? 0.44 : 0.36;
+        let baseWeight = 0.36;
+        if (heatMode === 'weighted') {
+          const isDengue = (rec.serviceSubtype || '').includes('Dengue');
+          const isInfectious = rec.fhsisSection === 'Section G: Infectious Diseases & Morbidity';
+          const isHighRiskMaternal = rec.bpDangerSign || rec.fhsisSection === 'Section B: Maternal Care';
+          baseWeight = isDengue ? 0.58 : isInfectious ? 0.45 : isHighRiskMaternal ? 0.40 : 0.32;
+        } else {
+          const pop = barangayPopMap[rec.barangay] || 15000;
+          const per10kContribution = 10000 / pop;
+          baseWeight = Math.min(0.72, Math.max(0.24, per10kContribution * 0.52));
+        }
 
-        ctx.globalAlpha = weight;
+        ctx.globalAlpha = Math.min(0.95, baseWeight * intensityScale * zoomIntensityFactor);
         ctx.drawImage(brush, pt.x - radius, pt.y - radius);
       });
 
-      // Map grayscale alpha channel through rainbow color LUT
       const imgData = ctx.getImageData(0, 0, size.x, size.y);
       const pixels = imgData.data;
       for (let i = 0; i < pixels.length; i += 4) {
@@ -529,19 +486,18 @@ function ThermalHeatmapLayer({ cases }) {
       map.off('viewreset', drawHeatmap);
       map.off('zoomstart', handleZoomStart);
       map.off('zoomend', handleZoomEnd);
-      if (canvas.parentNode) {
-        canvas.parentNode.removeChild(canvas);
-      }
+      if (canvas.parentNode) canvas.parentNode.removeChild(canvas);
     };
-  }, [map, cases]);
+  }, [map, cases, heatMode, opacity, intensityScale, zoomAdaptive, barangayPopMap]);
 
   return null;
 }
 
-// --- REFERENCE-STYLED MAGENTA TEARDROP PIN FOR BARANGAY HEALTH CENTERS ---
-const createHealthCenterPinIcon = (caseCount, isSelected) => {
-  const fill = isSelected ? '#be185d' : '#ec0075';
-  const stroke = isSelected ? '#fde047' : '#ffffff';
+// --- PIN & CLUSTER ICONS ---
+const createHealthCenterPinIcon = (caseCount, isFocused) => {
+  const fill = isFocused ? '#be185d' : '#ec0075';
+  const stroke = isFocused ? '#fde047' : '#ffffff';
+  const scale = isFocused ? 'transform:scale(1.16);' : '';
   const badge =
     caseCount > 0
       ? `<span style="position:absolute;top:-5px;right:-7px;min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:#0f172a;color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;border:1.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.35);">${caseCount}</span>`
@@ -550,7 +506,7 @@ const createHealthCenterPinIcon = (caseCount, isSelected) => {
   return L.divIcon({
     className: 'custom-bhs-pin',
     html: `
-      <div style="position:relative;width:30px;height:38px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 3px 4px rgba(15,23,42,0.38));">
+      <div style="position:relative;width:30px;height:38px;display:flex;align-items:center;justify-content:center;${scale}filter:drop-shadow(0 3px 4px rgba(15,23,42,0.38));">
         <svg width="30" height="38" viewBox="0 0 30 38" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M15 1C7.82 1 2 6.82 2 14C2 23.25 15 36.5 15 36.5C15 36.5 28 23.25 28 14C28 6.82 22.18 1 15 1Z" fill="${fill}" stroke="${stroke}" stroke-width="2"/>
           <circle cx="15" cy="13.5" r="6" fill="#ffffff"/>
@@ -565,35 +521,263 @@ const createHealthCenterPinIcon = (caseCount, isSelected) => {
   });
 };
 
-// Automatically pan & zoom map when Barangay selection changes
-function MapUpdater({ center, zoom }) {
+const createClusterBadgeIcon = (facilityCount, totalCases) =>
+  L.divIcon({
+    className: 'custom-bhs-cluster',
+    html: `
+      <div style="position:relative;width:44px;height:44px;border-radius:999px;background:rgba(236,0,117,0.22);display:flex;align-items:center;justify-content:center;">
+        <div style="width:34px;height:34px;border-radius:999px;background:#ec0075;border:2.5px solid #ffffff;color:#ffffff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 8px rgba(15,23,42,0.35);">
+          ${facilityCount}
+        </div>
+        <span style="position:absolute;bottom:-6px;background:#0f172a;color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:999px;border:1px solid #fff;white-space:nowrap;">
+          ${totalCases} cases
+        </span>
+      </div>
+    `,
+    iconSize: [44, 44],
+    iconAnchor: [22, 22],
+  });
+
+// --- SMART PIN CLUSTERING LAYER ---
+function SmartPinClusterLayer({
+  healthCenters,
+  clusteringEnabled,
+  focusedBhsId,
+  bufferKm,
+  onSelectBhs,
+  onToggleRingForBhs,
+  showAllBuffers,
+}) {
+  const map = useMap();
+  const [zoom, setZoom] = useState(() => map.getZoom());
+
+  useMapEvents({
+    zoomend: () => setZoom(map.getZoom()),
+  });
+
+  const clusters = useMemo(() => {
+    if (!clusteringEnabled || zoom >= 14) {
+      return healthCenters.map((bhs) => ({
+        isCluster: false,
+        id: bhs.id,
+        lat: bhs.lat,
+        lng: bhs.lng,
+        items: [bhs],
+      }));
+    }
+
+    const thresholdPx = zoom <= 12 ? 56 : 44;
+    const grouped = [];
+
+    healthCenters.forEach((bhs) => {
+      if (bhs.id === focusedBhsId) {
+        grouped.push({
+          isCluster: false,
+          id: bhs.id,
+          lat: bhs.lat,
+          lng: bhs.lng,
+          items: [bhs],
+        });
+        return;
+      }
+
+      const pt = map.latLngToContainerPoint([bhs.lat, bhs.lng]);
+      let matchedCluster = null;
+
+      for (const c of grouped) {
+        if (c.items.some((i) => i.id === focusedBhsId)) continue;
+        const cPt = map.latLngToContainerPoint([c.lat, c.lng]);
+        const dist = Math.hypot(pt.x - cPt.x, pt.y - cPt.y);
+        if (dist <= thresholdPx) {
+          matchedCluster = c;
+          break;
+        }
+      }
+
+      if (matchedCluster) {
+        matchedCluster.items.push(bhs);
+        const n = matchedCluster.items.length;
+        matchedCluster.lat = matchedCluster.items.reduce((s, x) => s + x.lat, 0) / n;
+        matchedCluster.lng = matchedCluster.items.reduce((s, x) => s + x.lng, 0) / n;
+        matchedCluster.isCluster = true;
+      } else {
+        grouped.push({
+          isCluster: false,
+          id: bhs.id,
+          lat: bhs.lat,
+          lng: bhs.lng,
+          items: [bhs],
+        });
+      }
+    });
+
+    return grouped;
+  }, [healthCenters, clusteringEnabled, zoom, focusedBhsId, map]);
+
+  return (
+    <>
+      {clusters.map((entry) => {
+        if (entry.isCluster && entry.items.length > 1) {
+          const totalCases = entry.items.reduce((sum, b) => sum + b.totalCases, 0);
+          return (
+            <Marker
+              key={`cluster-${entry.items.map((i) => i.id).join('-')}`}
+              position={[entry.lat, entry.lng]}
+              icon={createClusterBadgeIcon(entry.items.length, totalCases)}
+              eventHandlers={{
+                click: () => {
+                  const bounds = L.latLngBounds(entry.items.map((i) => [i.lat, i.lng]));
+                  map.flyToBounds(bounds.pad(0.45), { maxZoom: 15, duration: 0.85 });
+                },
+              }}
+            >
+              <Tooltip direction="top" offset={[0, -18]} opacity={0.96}>
+                <div className="text-xs font-sans">
+                  <strong>{entry.items.length} Health Centers Clustered</strong>
+                  <div className="text-slate-600">{entry.items.map((i) => i.barangay).join(', ')}</div>
+                  <div className="text-[10px] text-pink-700 font-semibold mt-0.5">Click to zoom & expand pins</div>
+                </div>
+              </Tooltip>
+            </Marker>
+          );
+        }
+
+        const bhs = entry.items[0];
+        const isFocused = focusedBhsId === bhs.id;
+
+        return (
+          <Marker
+            key={bhs.id}
+            position={[bhs.lat, bhs.lng]}
+            icon={createHealthCenterPinIcon(bhs.totalCases, isFocused)}
+            eventHandlers={{
+              click: () => onSelectBhs(bhs),
+            }}
+          >
+            <Popup>
+              <div className="text-xs font-sans min-w-[245px] space-y-2">
+                <div className="border-b border-slate-200 pb-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="inline-block px-1.5 py-0.5 bg-pink-100 text-pink-800 rounded text-[10px] font-bold uppercase">
+                      Barangay Health Center
+                    </span>
+                    <span className="text-[10px] font-semibold text-slate-400">{bhs.district}</span>
+                  </div>
+                  <h4 className="font-bold text-sm text-slate-900 mt-1">{bhs.bhsName}</h4>
+                  <p className="text-[11px] text-slate-600 mt-0.5">{bhs.address}</p>
+                </div>
+
+                {/* Facility Basics: Operating Hours & Contact */}
+                <div className="space-y-1 text-[11px] text-slate-700">
+                  <div className="flex items-start gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                    <span>{bhs.hours}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <span className="font-medium">{bhs.contact}</span>
+                  </div>
+                </div>
+
+                {/* Catchment Case Load */}
+                <div className="grid grid-cols-2 gap-1.5 pt-1">
+                  <div className="bg-blue-50 p-2 rounded border border-blue-100">
+                    <span className="text-blue-600 block text-[10px] font-semibold uppercase">Active Cases</span>
+                    <strong className="text-blue-900 text-sm">{bhs.totalCases}</strong>
+                    <span className="block text-[10px] text-slate-500">Assigned Brgy</span>
+                  </div>
+                  <div className="bg-rose-50 p-2 rounded border border-rose-100">
+                    <span className="text-rose-600 block text-[10px] font-semibold uppercase">Recent 7-Day</span>
+                    <strong className="text-rose-900 text-sm">{bhs.recent7DayCases}</strong>
+                    <span className="block text-[10px] text-slate-500">Rate: {bhs.attackRate}/10k</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-1 text-center text-[10px]">
+                  <div className="bg-slate-50 p-1 rounded border border-slate-200">
+                    <span className="text-slate-400 block">Dengue</span>
+                    <strong className="text-rose-700">{bhs.dengue}</strong>
+                  </div>
+                  <div className="bg-slate-50 p-1 rounded border border-slate-200">
+                    <span className="text-slate-400 block">Maternal</span>
+                    <strong className="text-pink-700">{bhs.maternal}</strong>
+                  </div>
+                  <div className="bg-slate-50 p-1 rounded border border-slate-200">
+                    <span className="text-slate-400 block">In {bufferKm}km</span>
+                    <strong className="text-emerald-700">{bhs.casesInRadius}</strong>
+                  </div>
+                </div>
+
+                <div className="pt-1.5 border-t border-slate-100 flex items-center justify-between gap-2">
+                  <span className="text-[10px] text-slate-500">
+                    Pop: <strong>{bhs.population.toLocaleString()}</strong>
+                  </span>
+                  <button
+                    onClick={() => onToggleRingForBhs(bhs.id)}
+                    className="px-2 py-1 rounded bg-slate-900 text-white text-[10px] font-semibold hover:bg-slate-700 transition"
+                  >
+                    {isFocused || showAllBuffers ? `${bufferKm} km Ring Active` : `Show ${bufferKm} km Buffer`}
+                  </button>
+                </div>
+              </div>
+            </Popup>
+          </Marker>
+        );
+      })}
+    </>
+  );
+}
+
+// Programmatic Map Camera Controller
+function MapCameraController({ target }) {
   const map = useMap();
   useEffect(() => {
-    map.flyTo(center, zoom, { duration: 1.0 });
-  }, [center, zoom, map]);
+    if (!target) return;
+    map.flyTo(target.center, target.zoom, { duration: 0.9 });
+  }, [target, map]);
   return null;
 }
 
 export default function CHODashboard() {
   const [activeMenu, setActiveMenu] = useState('spatial'); // 'spatial' | 'registry' | 'reports'
 
-  // Spatial Map States: 'both' = Thermal Heat Map + BHS Pins, 'heat' = Cases Only, 'pin' = BHS Centers Only
-  const [mapLayer, setMapLayer] = useState('both');
+  // --- INDEPENDENT LAYER TOGGLES ---
+  const [showHeatMap, setShowHeatMap] = useState(true);
+  const [showHealthPins, setShowHealthPins] = useState(true);
+
+  // --- HEAT MAP ADVANCED CONTROLS ---
+  const [heatMode, setHeatMode] = useState('weighted'); // 'weighted' | 'attackRate'
+  const [heatOpacity, setHeatOpacity] = useState(0.76);
+  const [heatIntensity, setHeatIntensity] = useState(1.1);
+  const [zoomAdaptive, setZoomAdaptive] = useState(true);
+  const [baseMapStyle, setBaseMapStyle] = useState('light'); // 'light' | 'standard' | 'dark'
+
+  // --- PIN MAP & SPATIAL PROXIMITY CONTROLS ---
+  const [showAllBuffers, setShowAllBuffers] = useState(false);
+  const [bufferKm, setBufferKm] = useState(2); // 1, 2, or 3 km
+  const [clusteringEnabled, setClusteringEnabled] = useState(true);
+  const [focusedBhsId, setFocusedBhsId] = useState(null);
+  const [inspectedHotspot, setInspectedHotspot] = useState(null);
+  const [mapTarget, setMapTarget] = useState(BARANGAY_VIEWPORTS['All Butuan City']);
+
+  // --- EPIDEMIOLOGICAL & TIME-RANGE FILTERS ---
   const [filterBarangay, setFilterBarangay] = useState('All Butuan City');
   const [filterSection, setFilterSection] = useState('All FHSIS Sections');
   const [filterTimeframe, setFilterTimeframe] = useState('All Time');
+  const [customStartDate, setCustomStartDate] = useState('2026-11-01');
+  const [customEndDate, setCustomEndDate] = useState('2026-11-30');
 
-  // Registry States
+  // --- REGISTRY STATES ---
   const [registrySearch, setRegistrySearch] = useState('');
   const [registryBarangay, setRegistryBarangay] = useState('All Butuan City');
   const [selectedRecord, setSelectedRecord] = useState(null);
 
-  // Live Synchronized Records (Baseline + All BHW localStorage records)
+  // --- LIVE SYNCHRONIZED RECORDS (BHW + Baseline) ---
   const [allRecords, setAllRecords] = useState([]);
   const [bhwSyncedCount, setBhwSyncedCount] = useState(0);
   const [lastSyncedAt, setLastSyncedAt] = useState(new Date().toLocaleTimeString());
 
-  // FHSIS Report Tab States
+  // --- FHSIS REPORT TAB STATES ---
   const now = new Date();
   const [exportScope, setExportScope] = useState('All Butuan City');
   const [reportPeriodType, setReportPeriodType] = useState('Monthly');
@@ -620,6 +804,11 @@ export default function CHODashboard() {
       format: 'CSV',
     },
   ]);
+
+  const barangayPopMap = useMemo(
+    () => Object.fromEntries(BARANGAY_HEALTH_CENTERS.map((b) => [b.barangay, b.population])),
+    []
+  );
 
   // --- LOAD & MERGE LIVE BHW PORTAL DATA FROM LOCALSTORAGE ---
   const loadAlignedRecords = useCallback(() => {
@@ -676,62 +865,162 @@ export default function CHODashboard() {
     }
   }, [exportScope]);
 
-  const matchesTimeframe = useCallback((visitDate, timeframe) => {
-    if (timeframe === 'All Time' || !visitDate) return true;
-    const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
-    if (timeframe === 'Today') return visitDate === todayStr;
-
-    const recordDate = new Date(`${visitDate}T00:00:00`);
-    if (timeframe === 'Last 7 Days') {
-      const diffDays = (today - recordDate) / (1000 * 60 * 60 * 24);
-      return diffDays >= -1 && diffDays <= 7;
-    }
-    if (timeframe === 'This Month') {
-      return (
-        recordDate.getFullYear() === today.getFullYear() &&
-        recordDate.getMonth() === today.getMonth()
-      );
-    }
-    if (timeframe === 'This Quarter') {
-      const curQ = Math.floor(today.getMonth() / 3);
-      const recQ = Math.floor(recordDate.getMonth() / 3);
-      return recordDate.getFullYear() === today.getFullYear() && recQ === curQ;
-    }
-    return true;
-  }, []);
+  // --- TIME-RANGE FILTER & 7-DAY TREND CALCULATION ---
+  const matchesTimeframe = useCallback(
+    (visitDate) => {
+      if (filterTimeframe === 'All Time' || !visitDate) return true;
+      const diff = daysAgoFromToday(visitDate);
+      if (filterTimeframe === 'Last 7 Days') return diff >= -1 && diff <= 7;
+      if (filterTimeframe === 'Last 14 Days') return diff >= -1 && diff <= 14;
+      if (filterTimeframe === 'Last 30 Days') return diff >= -1 && diff <= 30;
+      if (filterTimeframe === 'Custom Range') {
+        return (!customStartDate || visitDate >= customStartDate) && (!customEndDate || visitDate <= customEndDate);
+      }
+      return true;
+    },
+    [filterTimeframe, customStartDate, customEndDate]
+  );
 
   const filteredCases = useMemo(() => {
     return allRecords.filter((rec) => {
       const matchBrgy = filterBarangay === 'All Butuan City' || rec.barangay === filterBarangay;
       const matchSec = filterSection === 'All FHSIS Sections' || rec.fhsisSection === filterSection;
-      const matchTime = matchesTimeframe(rec.visitDate, filterTimeframe);
+      const matchTime = matchesTimeframe(rec.visitDate);
       return matchBrgy && matchSec && matchTime;
     });
-  }, [allRecords, filterBarangay, filterSection, filterTimeframe, matchesTimeframe]);
+  }, [allRecords, filterBarangay, filterSection, matchesTimeframe]);
 
-  const visibleHealthCenters = useMemo(() => {
+  const trendStats = useMemo(() => {
+    const scoped = allRecords.filter((rec) => {
+      const matchBrgy = filterBarangay === 'All Butuan City' || rec.barangay === filterBarangay;
+      const matchSec = filterSection === 'All FHSIS Sections' || rec.fhsisSection === filterSection;
+      return matchBrgy && matchSec;
+    });
+    const recent7 = scoped.filter((r) => {
+      const d = daysAgoFromToday(r.visitDate);
+      return d >= 0 && d <= 7;
+    }).length;
+    const prev7 = scoped.filter((r) => {
+      const d = daysAgoFromToday(r.visitDate);
+      return d > 7 && d <= 14;
+    }).length;
+
+    const deltaPct = prev7 === 0 ? (recent7 > 0 ? 100 : 0) : Math.round(((recent7 - prev7) / prev7) * 100);
+    return { recent7, prev7, deltaPct };
+  }, [allRecords, filterBarangay, filterSection]);
+
+  const enrichedHealthCenters = useMemo(() => {
     return BARANGAY_HEALTH_CENTERS.filter(
       (bhs) => filterBarangay === 'All Butuan City' || bhs.barangay === filterBarangay
     ).map((bhs) => {
       const brgyCases = filteredCases.filter((c) => c.barangay === bhs.barangay);
-      const infectious = brgyCases.filter((c) => c.fhsisSection === 'Section G: Infectious Diseases & Morbidity').length;
+      const recent7DayCases = brgyCases.filter((c) => {
+        const d = daysAgoFromToday(c.visitDate);
+        return d >= 0 && d <= 7;
+      }).length;
+      const casesInRadius = filteredCases.filter((c) => {
+        const lat = parseFloat(c.latitude);
+        const lng = parseFloat(c.longitude);
+        if (Number.isNaN(lat) || Number.isNaN(lng)) return false;
+        return haversineKm(bhs.lat, bhs.lng, lat, lng) <= bufferKm;
+      }).length;
       const dengue = brgyCases.filter((c) => (c.serviceSubtype || '').includes('Dengue')).length;
       const maternal = brgyCases.filter((c) => c.fhsisSection === 'Section B: Maternal Care' || c.isPregnant).length;
-      const ncd = brgyCases.filter((c) => c.fhsisSection === 'Section E: Non-Communicable Diseases (PhilPEN)').length;
-      const referrals = brgyCases.filter((c) => c.referralRoute === 'BHS to RHU' || c.actionTaken === 'Referred to RHU / Hospital').length;
+      const attackRate = ((brgyCases.length / bhs.population) * 10000).toFixed(1);
+
       return {
         ...bhs,
         totalCases: brgyCases.length,
-        infectious,
+        recent7DayCases,
+        casesInRadius,
         dengue,
         maternal,
-        ncd,
-        referrals,
+        attackRate,
       };
     });
-  }, [filterBarangay, filteredCases]);
+  }, [filterBarangay, filteredCases, bufferKm]);
 
+  const bufferCoverageStats = useMemo(() => {
+    let inside = 0;
+    let outside = 0;
+    filteredCases.forEach((rec) => {
+      const lat = parseFloat(rec.latitude);
+      const lng = parseFloat(rec.longitude);
+      if (Number.isNaN(lat) || Number.isNaN(lng)) return;
+      const nearestDist = Math.min(
+        ...BARANGAY_HEALTH_CENTERS.map((b) => haversineKm(lat, lng, b.lat, b.lng))
+      );
+      if (nearestDist <= bufferKm) inside += 1;
+      else outside += 1;
+    });
+    return { inside, outside };
+  }, [filteredCases, bufferKm]);
+
+  const focusedBhs = useMemo(
+    () => enrichedHealthCenters.find((b) => b.id === focusedBhsId) || null,
+    [enrichedHealthCenters, focusedBhsId]
+  );
+
+  // --- HOTSPOT-TO-PIN INSPECTION HANDLER ---
+  const handleInspectHotspot = (record) => {
+    const lat = parseFloat(record.latitude);
+    const lng = parseFloat(record.longitude);
+    if (Number.isNaN(lat) || Number.isNaN(lng)) return;
+
+    let nearestBhs = BARANGAY_HEALTH_CENTERS[0];
+    let minDist = Infinity;
+    BARANGAY_HEALTH_CENTERS.forEach((bhs) => {
+      const d = haversineKm(lat, lng, bhs.lat, bhs.lng);
+      if (d < minDist) {
+        minDist = d;
+        nearestBhs = bhs;
+      }
+    });
+
+    const nearbyCases = filteredCases.filter((c) => {
+      const cLat = parseFloat(c.latitude);
+      const cLng = parseFloat(c.longitude);
+      if (Number.isNaN(cLat) || Number.isNaN(cLng)) return false;
+      return haversineKm(lat, lng, cLat, cLng) <= 0.8;
+    }).length;
+
+    const brgyPop = barangayPopMap[record.barangay] || 15000;
+    const brgyCases = filteredCases.filter((c) => c.barangay === record.barangay).length;
+    const attackRate = ((brgyCases / brgyPop) * 10000).toFixed(1);
+
+    setInspectedHotspot({
+      record,
+      nearestBhs,
+      distanceKm: minDist.toFixed(2),
+      isOutsideBuffer: minDist > bufferKm,
+      nearbyCases,
+      attackRate,
+    });
+  };
+
+  const handleFocusBhs = (bhs) => {
+    setFocusedBhsId(bhs.id);
+    setShowHealthPins(true);
+    setMapTarget({ center: [bhs.lat, bhs.lng], zoom: 14 });
+  };
+
+  const handleClearFocus = () => {
+    setFocusedBhsId(null);
+    setInspectedHotspot(null);
+  };
+
+  const handleBarangayDropdownChange = (brgy) => {
+    setFilterBarangay(brgy);
+    setMapTarget(BARANGAY_VIEWPORTS[brgy] || BARANGAY_VIEWPORTS['All Butuan City']);
+    if (brgy === 'All Butuan City') {
+      setFocusedBhsId(null);
+    } else {
+      const matched = BARANGAY_HEALTH_CENTERS.find((b) => b.barangay === brgy);
+      if (matched) setFocusedBhsId(matched.id);
+    }
+  };
+
+  // --- DYNAMIC KPI CALCULATIONS ---
   const kpiStats = useMemo(() => {
     const totalCases = allRecords.length;
     const dengueAlerts = allRecords.filter((r) => (r.serviceSubtype || '').includes('Dengue')).length;
@@ -753,6 +1042,7 @@ export default function CHODashboard() {
     };
   }, [allRecords]);
 
+  // --- REGISTRY & FHSIS REPORT AGGREGATION ---
   const filteredRegistry = useMemo(() => {
     const q = registrySearch.toLowerCase();
     return allRecords.filter((r) => {
@@ -959,21 +1249,9 @@ export default function CHODashboard() {
     const rows = [
       ['Visit ID', 'Patient ID', 'Patient Name', 'Age', 'Sex', 'Barangay', 'Visit Date', 'Nature of Visit', 'FHSIS Section', 'Indicator / Case', 'BP', 'Temp', 'Action Taken', 'Outcome', 'Source'],
       ...filteredRegistry.map((r) => [
-        r.visitId,
-        r.patientId,
-        r.patientSnapshot?.name,
-        r.patientSnapshot?.age,
-        r.patientSnapshot?.sex,
-        r.barangay,
-        r.visitDate,
-        r.natureOfVisit,
-        r.fhsisSection,
-        r.serviceSubtype,
-        r.bloodPressure,
-        r.temperature,
-        r.actionTaken,
-        r.outcome,
-        r.source,
+        r.visitId, r.patientId, r.patientSnapshot?.name, r.patientSnapshot?.age, r.patientSnapshot?.sex,
+        r.barangay, r.visitDate, r.natureOfVisit, r.fhsisSection, r.serviceSubtype,
+        r.bloodPressure, r.temperature, r.actionTaken, r.outcome, r.source,
       ]),
     ];
     triggerCsvDownload(rows, `CHO_City_Registry_${new Date().toISOString().split('T')[0]}.csv`);
@@ -1059,7 +1337,7 @@ export default function CHODashboard() {
     window.print();
   };
 
-  const currentMapView = BARANGAY_VIEWPORTS[filterBarangay] || BARANGAY_VIEWPORTS['All Butuan City'];
+  const activeBasemap = BASEMAP_STYLES[baseMapStyle] || BASEMAP_STYLES.light;
 
   return (
     <div className="flex min-h-[calc(100vh-57px)] bg-slate-50 font-sans">
@@ -1124,7 +1402,7 @@ export default function CHODashboard() {
                 {activeMenu === 'reports' && 'Consolidated FHSIS Report Generation'}
               </h1>
               <p className="text-sm text-slate-500 mt-1">
-                {activeMenu === 'spatial' && 'Thermal Heat Map shows case density clusters; Pin Map locates Barangay Health Centers across Butuan City.'}
+                {activeMenu === 'spatial' && 'Independent GIS layers for disease density, attack-rate risk, and health center service buffers.'}
                 {activeMenu === 'registry' && 'Unified view of BHW-encoded and CHO-validated consultation records across all health stations.'}
                 {activeMenu === 'reports' && 'Aligned with BHW Form M1 (CHD.PDMD.F.001.REV00) for Monthly, Quarterly, and Annual DOH reporting.'}
               </p>
@@ -1178,180 +1456,429 @@ export default function CHODashboard() {
            ============================================================ */}
         {activeMenu === 'spatial' && (
           <div className="flex-1 flex overflow-hidden">
-            {/* Map Controls Sidebar */}
-            <div className="w-72 lg:w-80 bg-white border-r border-slate-200 p-5 overflow-y-auto z-10 shadow-[4px_0_15px_-3px_rgba(0,0,0,0.05)] shrink-0">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                <Layers className="w-4 h-4" /> Map Visualization Layer
-              </h3>
+            {/* LEFT GIS CONTROL PANEL */}
+            <div className="w-80 bg-white border-r border-slate-200 p-4 overflow-y-auto z-10 shadow-[4px_0_15px_-3px_rgba(0,0,0,0.05)] shrink-0 space-y-5">
+              {/* INDEPENDENT LAYER TOGGLES */}
+              <div className="space-y-2.5">
+                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                  <Layers className="w-4 h-4 text-blue-600" /> Map Layer Toggles
+                </h3>
+                <div className="space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                  <label className="flex items-center justify-between cursor-pointer text-xs font-semibold text-slate-700 py-1">
+                    <span className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={showHeatMap}
+                        onChange={(e) => setShowHeatMap(e.target.checked)}
+                        className="w-4 h-4 rounded text-rose-600 focus:ring-rose-500"
+                      />
+                      <Flame className="w-3.5 h-3.5 text-rose-500" />
+                      Disease Heat Map
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-400">{filteredCases.length}</span>
+                  </label>
 
-              <div className="space-y-5">
-                <div className="space-y-2">
-                  <div className="grid grid-cols-1 gap-1.5 bg-slate-100 p-1.5 rounded-xl">
-                    <button
-                      onClick={() => setMapLayer('both')}
-                      className={`flex items-center justify-between px-3 py-2 text-xs font-semibold rounded-lg transition ${
-                        mapLayer === 'both'
-                          ? 'bg-blue-600 text-white shadow-sm'
-                          : 'text-slate-600 hover:bg-slate-200'
-                      }`}
-                    >
-                      <span className="flex items-center gap-2">
-                        <Layers className="w-4 h-4" /> Heat Map + BHS Pins
-                      </span>
-                      <span className="text-[10px] opacity-85">Combined</span>
-                    </button>
-
-                    <button
-                      onClick={() => setMapLayer('heat')}
-                      className={`flex items-center justify-between px-3 py-2 text-xs font-semibold rounded-lg transition ${
-                        mapLayer === 'heat'
-                          ? 'bg-rose-600 text-white shadow-sm'
-                          : 'text-slate-600 hover:bg-slate-200'
-                      }`}
-                    >
-                      <span className="flex items-center gap-2">
-                        <Flame className="w-4 h-4" /> Heat Map (Cases Only)
-                      </span>
-                      <span className="text-[10px] opacity-85">{filteredCases.length}</span>
-                    </button>
-
-                    <button
-                      onClick={() => setMapLayer('pin')}
-                      className={`flex items-center justify-between px-3 py-2 text-xs font-semibold rounded-lg transition ${
-                        mapLayer === 'pin'
-                          ? 'bg-pink-600 text-white shadow-sm'
-                          : 'text-slate-600 hover:bg-slate-200'
-                      }`}
-                    >
-                      <span className="flex items-center gap-2">
-                        <Building2 className="w-4 h-4" /> Pin Map (Health Centers)
-                      </span>
-                      <span className="text-[10px] opacity-85">{visibleHealthCenters.length} BHS</span>
-                    </button>
-                  </div>
-                  <p className="text-[11px] text-slate-500 leading-snug">
-                    {mapLayer === 'both' && 'Overlays smooth thermal case-density zones with Barangay Health Center pins.'}
-                    {mapLayer === 'heat' && 'Smooth thermal spectrum indicating spatial concentration of reported clinical cases.'}
-                    {mapLayer === 'pin' && 'Shows exact locations of Butuan City Barangay Health Centers (click a pin for station summary).'}
-                  </p>
+                  <label className="flex items-center justify-between cursor-pointer text-xs font-semibold text-slate-700 py-1">
+                    <span className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={showHealthPins}
+                        onChange={(e) => setShowHealthPins(e.target.checked)}
+                        className="w-4 h-4 rounded text-pink-600 focus:ring-pink-500"
+                      />
+                      <Building2 className="w-3.5 h-3.5 text-pink-600" />
+                      Health Center Pins
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-400">{enrichedHealthCenters.length} BHS</span>
+                  </label>
                 </div>
+              </div>
 
-                {/* Epidemiological Filters */}
+              {/* HEAT MAP MODE & CONTRAST CONTROLS */}
+              {showHeatMap && (
                 <div className="space-y-3 pt-4 border-t border-slate-100">
-                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                    <Filter className="w-4 h-4" /> Epidemiological Filters
+                  <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                    <Sliders className="w-4 h-4 text-rose-600" /> Heat Map Analytics
                   </h3>
 
                   <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">Geographic Area</label>
-                    <div className="relative">
-                      <MapPin className="w-4 h-4 text-slate-400 absolute left-2.5 top-2.5" />
-                      <select
-                        value={filterBarangay}
-                        onChange={(e) => setFilterBarangay(e.target.value)}
-                        className="w-full text-sm pl-8 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                      >
-                        <option value="All Butuan City">All Butuan City</option>
-                        {BARANGAY_HEALTH_CENTERS.map((bhs) => (
-                          <option key={bhs.id} value={bhs.barangay}>
-                            Barangay {bhs.barangay}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">FHSIS Program Section</label>
-                    <div className="relative">
-                      <Activity className="w-4 h-4 text-slate-400 absolute left-2.5 top-2.5" />
-                      <select
-                        value={filterSection}
-                        onChange={(e) => setFilterSection(e.target.value)}
-                        className="w-full text-sm pl-8 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                      >
-                        <option value="All FHSIS Sections">All FHSIS Sections</option>
-                        {FHSIS_SECTIONS.map((sec) => (
-                          <option key={sec} value={sec}>{sec}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">Timeframe</label>
-                    <div className="relative">
-                      <Calendar className="w-4 h-4 text-slate-400 absolute left-2.5 top-2.5" />
-                      <select
-                        value={filterTimeframe}
-                        onChange={(e) => setFilterTimeframe(e.target.value)}
-                        className="w-full text-sm pl-8 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                      >
-                        <option value="All Time">All Recorded Cases</option>
-                        <option value="Today">Today</option>
-                        <option value="Last 7 Days">Last 7 Days</option>
-                        <option value="This Month">This Month</option>
-                        <option value="This Quarter">This Quarter</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Quick Barangay Health Center List */}
-                <div className="pt-4 border-t border-slate-100">
-                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-                    Barangay Health Centers ({visibleHealthCenters.length})
-                  </h3>
-                  <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-                    {visibleHealthCenters.map((bhs) => (
+                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">Intensity Layer Mode</label>
+                    <div className="grid grid-cols-2 gap-1 bg-slate-100 p-1 rounded-lg">
                       <button
-                        key={bhs.id}
-                        onClick={() => setFilterBarangay(bhs.barangay)}
-                        className={`w-full text-left px-2.5 py-2 rounded-lg border text-xs flex items-center justify-between transition ${
-                          filterBarangay === bhs.barangay
-                            ? 'bg-pink-50 border-pink-300 text-pink-900 font-semibold'
-                            : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                        onClick={() => setHeatMode('weighted')}
+                        className={`py-1.5 px-2 rounded-md text-[11px] font-semibold transition ${
+                          heatMode === 'weighted' ? 'bg-rose-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
                         }`}
                       >
-                        <span className="truncate">{bhs.barangay} BHS</span>
-                        <span className="px-1.5 py-0.5 rounded bg-white border border-slate-200 text-[10px] font-bold">
-                          {bhs.totalCases} {bhs.totalCases === 1 ? 'case' : 'cases'}
-                        </span>
+                        Weighted Density
+                      </button>
+                      <button
+                        onClick={() => setHeatMode('attackRate')}
+                        className={`py-1.5 px-2 rounded-md text-[11px] font-semibold transition ${
+                          heatMode === 'attackRate' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        Attack Rate (/10k)
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-slate-500 mt-1">
+                      {heatMode === 'weighted'
+                        ? 'Weights severe/notifiable cases (e.g., Dengue) higher to flag outbreak clusters.'
+                        : 'Normalizes cases against barangay population to expose high proportional risk.'}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <div className="flex justify-between text-[10px] font-semibold text-slate-600 mb-1">
+                        <span>Opacity</span>
+                        <span>{Math.round(heatOpacity * 100)}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0.25"
+                        max="0.95"
+                        step="0.05"
+                        value={heatOpacity}
+                        onChange={(e) => setHeatOpacity(parseFloat(e.target.value))}
+                        className="w-full accent-rose-600"
+                      />
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-[10px] font-semibold text-slate-600 mb-1">
+                        <span>Intensity</span>
+                        <span>{heatIntensity.toFixed(1)}x</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0.6"
+                        max="1.8"
+                        step="0.1"
+                        value={heatIntensity}
+                        onChange={(e) => setHeatIntensity(parseFloat(e.target.value))}
+                        className="w-full accent-rose-600"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={zoomAdaptive}
+                        onChange={(e) => setZoomAdaptive(e.target.checked)}
+                        className="w-3.5 h-3.5 rounded text-blue-600"
+                      />
+                      <span className="font-medium">Zoom-Adaptive Radius & Intensity</span>
+                    </label>
+
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-600 mb-1">Base Map Contrast</label>
+                      <select
+                        value={baseMapStyle}
+                        onChange={(e) => setBaseMapStyle(e.target.value)}
+                        className="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none"
+                      >
+                        {Object.entries(BASEMAP_STYLES).map(([k, v]) => (
+                          <option key={k} value={k}>{v.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* SERVICE BUFFERS & SMART CLUSTERING */}
+              <div className="space-y-3 pt-4 border-t border-slate-100">
+                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                  <Crosshair className="w-4 h-4 text-pink-600" /> Proximity & Pin Controls
+                </h3>
+
+                <label className="flex items-center justify-between text-xs text-slate-700 cursor-pointer">
+                  <span className="font-medium">Show All Coverage Rings</span>
+                  <input
+                    type="checkbox"
+                    checked={showAllBuffers}
+                    onChange={(e) => setShowAllBuffers(e.target.checked)}
+                    className="w-4 h-4 rounded text-pink-600"
+                  />
+                </label>
+
+                <div>
+                  <div className="flex justify-between text-[11px] font-semibold text-slate-600 mb-1">
+                    <span>Service Buffer Radius</span>
+                    <span className="text-pink-700">{bufferKm} km</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1 bg-slate-100 p-1 rounded-lg">
+                    {[1, 2, 3].map((km) => (
+                      <button
+                        key={km}
+                        onClick={() => setBufferKm(km)}
+                        className={`py-1 text-xs font-semibold rounded transition ${
+                          bufferKm === km ? 'bg-pink-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-200'
+                        }`}
+                      >
+                        {km} km
                       </button>
                     ))}
                   </div>
+                  <div className="flex items-center justify-between mt-1.5 text-[10px] bg-slate-50 px-2.5 py-1.5 rounded border border-slate-200">
+                    <span className="text-emerald-700 font-semibold">Inside {bufferKm}km: {bufferCoverageStats.inside}</span>
+                    <span className={`font-semibold ${bufferCoverageStats.outside > 0 ? 'text-rose-600' : 'text-slate-500'}`}>
+                      Outside Gap: {bufferCoverageStats.outside}
+                    </span>
+                  </div>
+                </div>
+
+                <label className="flex items-center justify-between text-xs text-slate-700 cursor-pointer">
+                  <span className="font-medium">Smart Pin Clustering (City Zoom)</span>
+                  <input
+                    type="checkbox"
+                    checked={clusteringEnabled}
+                    onChange={(e) => setClusteringEnabled(e.target.checked)}
+                    className="w-4 h-4 rounded text-blue-600"
+                  />
+                </label>
+              </div>
+
+              {/* TIME-RANGE & TREND CONTROLS + FILTERS */}
+              <div className="space-y-3 pt-4 border-t border-slate-100">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                    <Filter className="w-4 h-4 text-blue-600" /> Time & Disease Filters
+                  </h3>
+                  <span
+                    className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                      trendStats.deltaPct > 0
+                        ? 'bg-rose-100 text-rose-700'
+                        : 'bg-emerald-100 text-emerald-700'
+                    }`}
+                    title={`Last 7 days: ${trendStats.recent7} vs Prior 7 days: ${trendStats.prev7}`}
+                  >
+                    {trendStats.deltaPct > 0 ? (
+                      <TrendingUp className="w-3 h-3" />
+                    ) : (
+                      <TrendingDown className="w-3 h-3" />
+                    )}
+                    {trendStats.deltaPct > 0 ? `+${trendStats.deltaPct}%` : `${trendStats.deltaPct}%`} (7d)
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-600 mb-1">Time Range</label>
+                  <select
+                    value={filterTimeframe}
+                    onChange={(e) => setFilterTimeframe(e.target.value)}
+                    className="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none"
+                  >
+                    <option value="All Time">All Recorded Cases</option>
+                    <option value="Last 7 Days">Last 7 Days ({trendStats.recent7} cases)</option>
+                    <option value="Last 14 Days">Last 14 Days</option>
+                    <option value="Last 30 Days">Last 30 Days</option>
+                    <option value="Custom Range">Custom Date Range</option>
+                  </select>
+                </div>
+
+                {filterTimeframe === 'Custom Range' && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="date"
+                      value={customStartDate}
+                      onChange={(e) => setCustomStartDate(e.target.value)}
+                      className="text-[11px] p-1.5 border border-slate-200 rounded-lg bg-white"
+                    />
+                    <input
+                      type="date"
+                      value={customEndDate}
+                      onChange={(e) => setCustomEndDate(e.target.value)}
+                      className="text-[11px] p-1.5 border border-slate-200 rounded-lg bg-white"
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-600 mb-1">Geographic Focus</label>
+                  <select
+                    value={filterBarangay}
+                    onChange={(e) => handleBarangayDropdownChange(e.target.value)}
+                    className="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none"
+                  >
+                    <option value="All Butuan City">All Butuan City</option>
+                    {BARANGAY_HEALTH_CENTERS.map((bhs) => (
+                      <option key={bhs.id} value={bhs.barangay}>Barangay {bhs.barangay}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-600 mb-1">FHSIS Program Section</label>
+                  <select
+                    value={filterSection}
+                    onChange={(e) => setFilterSection(e.target.value)}
+                    className="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none"
+                  >
+                    <option value="All FHSIS Sections">All FHSIS Sections</option>
+                    {FHSIS_SECTIONS.map((sec) => (
+                      <option key={sec} value={sec}>{sec}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </div>
 
-            {/* Interactive Leaflet Map */}
-            <div className="flex-1 relative z-0">
+            {/* INTERACTIVE LEAFLET MAP CANVAS */}
+            <div className={`flex-1 relative z-0 ${activeBasemap.themeClass}`}>
+              <style>{`
+                .map-theme-light .leaflet-tile-pane {
+                  filter: grayscale(85%) brightness(1.06) contrast(0.92);
+                }
+                .map-theme-dark .leaflet-tile-pane {
+                  filter: invert(100%) hue-rotate(180deg) brightness(92%) contrast(92%);
+                }
+              `}</style>
+
+              {/* Top Floating Facility Focus Banner */}
+              {focusedBhs && (
+                <div className="absolute top-4 left-14 z-[450] bg-slate-900/95 text-white px-4 py-2.5 rounded-xl shadow-lg border border-slate-700 flex items-center gap-3 text-xs">
+                  <div>
+                    <span className="text-[10px] uppercase tracking-wider text-pink-400 font-bold block">
+                      Health Center Focus ({bufferKm} km Buffer)
+                    </span>
+                    <span className="font-semibold">
+                      {focusedBhs.bhsName} — {focusedBhs.totalCases} active cases ({focusedBhs.recent7DayCases} in last 7d)
+                    </span>
+                  </div>
+                  <button
+                    onClick={handleClearFocus}
+                    className="px-2.5 py-1 bg-slate-700 hover:bg-slate-600 rounded-lg text-[11px] font-semibold flex items-center gap-1"
+                  >
+                    <X className="w-3.5 h-3.5" /> Clear Focus
+                  </button>
+                </div>
+              )}
+
+              {/* Floating Hotspot-to-Pin Inspection Card */}
+              {inspectedHotspot && (
+                <div className="absolute top-4 right-4 z-[450] bg-white/95 backdrop-blur p-4 rounded-xl shadow-xl border border-slate-200 w-72 text-xs space-y-2.5">
+                  <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-2">
+                    <div>
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-rose-100 text-rose-700 rounded text-[10px] font-bold uppercase">
+                        <Flame className="w-3 h-3" /> Hotspot-to-Pin Inspection
+                      </span>
+                      <h4 className="font-bold text-sm text-slate-900 mt-1">
+                        {inspectedHotspot.record.serviceSubtype}
+                      </h4>
+                      <p className="text-[11px] text-slate-500">
+                        Brgy. {inspectedHotspot.record.barangay} • {inspectedHotspot.record.visitDate}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setInspectedHotspot(null)}
+                      className="text-slate-400 hover:text-rose-600"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-[11px]">
+                    <div className="bg-slate-50 p-2 rounded border border-slate-200">
+                      <span className="text-slate-400 block text-[10px]">Local Cluster (800m)</span>
+                      <strong className="text-slate-800">{inspectedHotspot.nearbyCases} cases</strong>
+                    </div>
+                    <div className="bg-slate-50 p-2 rounded border border-slate-200">
+                      <span className="text-slate-400 block text-[10px]">Brgy Attack Rate</span>
+                      <strong className="text-rose-700">{inspectedHotspot.attackRate} / 10k</strong>
+                    </div>
+                  </div>
+
+                  <div
+                    className={`p-2.5 rounded-lg border text-[11px] space-y-1 ${
+                      inspectedHotspot.isOutsideBuffer
+                        ? 'bg-rose-50 border-rose-200 text-rose-900'
+                        : 'bg-emerald-50 border-emerald-200 text-emerald-900'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between font-bold">
+                      <span className="flex items-center gap-1">
+                        {inspectedHotspot.isOutsideBuffer ? (
+                          <ShieldAlert className="w-3.5 h-3.5 text-rose-600" />
+                        ) : (
+                          <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                        )}
+                        Nearest BHS: {inspectedHotspot.nearestBhs.barangay}
+                      </span>
+                      <span>{inspectedHotspot.distanceKm} km</span>
+                    </div>
+                    <p className="text-[10px]">
+                      {inspectedHotspot.isOutsideBuffer
+                        ? `Outside ${bufferKm} km service buffer — potential geographic access gap.`
+                        : `Within ${bufferKm} km service radius of ${inspectedHotspot.nearestBhs.bhsName}.`}
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => handleFocusBhs(inspectedHotspot.nearestBhs)}
+                    className="w-full py-2 bg-pink-600 hover:bg-pink-700 text-white rounded-lg font-semibold text-xs flex items-center justify-center gap-1.5 transition"
+                  >
+                    <Navigation className="w-3.5 h-3.5" /> Inspect Nearest Health Center
+                  </button>
+                </div>
+              )}
+
               <MapContainer
-                center={currentMapView.center}
-                zoom={currentMapView.zoom}
+                center={BARANGAY_VIEWPORTS['All Butuan City'].center}
+                zoom={BARANGAY_VIEWPORTS['All Butuan City'].zoom}
                 style={{ height: '100%', width: '100%' }}
               >
                 <TileLayer
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  attribution="&copy; OpenStreetMap contributors"
+                  key={baseMapStyle}
+                  url={activeBasemap.url}
+                  attribution={activeBasemap.attribution}
                 />
-                <MapUpdater center={currentMapView.center} zoom={currentMapView.zoom} />
+                <MapCameraController target={mapTarget} />
 
-                {/* SMOOTH CONTINUOUS THERMAL HEAT MAP LAYER (Cases) */}
-                {(mapLayer === 'heat' || mapLayer === 'both') && (
+                {/* COVERAGE RINGS / SERVICE BUFFERS (1–3 km) */}
+                {enrichedHealthCenters.map((bhs) => {
+                  const shouldShowRing = showAllBuffers || focusedBhsId === bhs.id;
+                  if (!shouldShowRing) return null;
+                  return (
+                    <Circle
+                      key={`buffer-${bhs.id}`}
+                      center={[bhs.lat, bhs.lng]}
+                      radius={bufferKm * 1000}
+                      interactive={false}
+                      pathOptions={{
+                        color: focusedBhsId === bhs.id ? '#ec0075' : '#0284c7',
+                        weight: focusedBhsId === bhs.id ? 2.5 : 1.5,
+                        dashArray: '6 5',
+                        fillColor: focusedBhsId === bhs.id ? '#ec0075' : '#38bdf8',
+                        fillOpacity: focusedBhsId === bhs.id ? 0.10 : 0.06,
+                      }}
+                    />
+                  );
+                })}
+
+                {/* DISEASE HEAT MAP + CLICKABLE HOTSPOT-TO-PIN HIT ZONES */}
+                {showHeatMap && (
                   <>
-                    <ThermalHeatmapLayer cases={filteredCases} />
+                    <ThermalHeatmapLayer
+                      cases={filteredCases}
+                      heatMode={heatMode}
+                      opacity={heatOpacity}
+                      intensityScale={heatIntensity}
+                      zoomAdaptive={zoomAdaptive}
+                      barangayPopMap={barangayPopMap}
+                    />
 
-                    {/* Invisible hover hit-zones so users can inspect case details over the thermal cloud */}
                     {filteredCases.map((record) => {
                       const lat = parseFloat(record.latitude);
                       const lng = parseFloat(record.longitude);
                       if (Number.isNaN(lat) || Number.isNaN(lng)) return null;
                       return (
                         <CircleMarker
-                          key={`hit-${record.visitId}`}
+                          key={`hotspot-hit-${record.visitId}`}
                           center={[lat, lng]}
-                          radius={14}
+                          radius={15}
                           pathOptions={{
                             color: 'transparent',
                             fillColor: 'transparent',
@@ -1359,13 +1886,16 @@ export default function CHODashboard() {
                             opacity: 0,
                             weight: 0,
                           }}
+                          eventHandlers={{
+                            click: () => handleInspectHotspot(record),
+                          }}
                         >
                           <Tooltip direction="top" offset={[0, -6]} opacity={0.96}>
                             <div className="text-xs font-sans">
                               <strong className="text-slate-900">{record.serviceSubtype}</strong>
                               <div className="text-slate-600">Brgy. {record.barangay} • {record.visitDate}</div>
-                              <div className="text-[10px] text-slate-500">
-                                {record.patientSnapshot?.age}y/{record.patientSnapshot?.sex} • {record.source}
+                              <div className="text-[10px] text-rose-600 font-semibold mt-0.5">
+                                Click hotspot to inspect nearest Health Center
                               </div>
                             </div>
                           </Tooltip>
@@ -1375,69 +1905,44 @@ export default function CHODashboard() {
                   </>
                 )}
 
-                {/* PIN MAP LAYER: Barangay Health Center Locations */}
-                {(mapLayer === 'pin' || mapLayer === 'both') &&
-                  visibleHealthCenters.map((bhs) => (
-                    <Marker
-                      key={bhs.id}
-                      position={[bhs.lat, bhs.lng]}
-                      icon={createHealthCenterPinIcon(bhs.totalCases, filterBarangay === bhs.barangay)}
-                    >
-                      <Popup>
-                        <div className="text-xs font-sans min-w-[215px] space-y-1.5">
-                          <div className="border-b border-slate-200 pb-1.5">
-                            <span className="inline-block px-1.5 py-0.5 bg-pink-100 text-pink-800 rounded text-[10px] font-bold uppercase">
-                              Barangay Health Center
-                            </span>
-                            <h4 className="font-bold text-sm text-slate-900 mt-1">{bhs.bhsName}</h4>
-                            <p className="text-[11px] text-slate-500">
-                              Brgy. {bhs.barangay}, Butuan City • {bhs.district}
-                            </p>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-1.5 py-1 text-[11px]">
-                            <div className="bg-slate-50 p-1.5 rounded border border-slate-200">
-                              <span className="text-slate-400 block text-[10px]">Total Cases</span>
-                              <strong className="text-slate-800 text-xs">{bhs.totalCases}</strong>
-                            </div>
-                            <div className="bg-rose-50 p-1.5 rounded border border-rose-100">
-                              <span className="text-rose-500 block text-[10px]">Dengue / Inf.</span>
-                              <strong className="text-rose-700 text-xs">{bhs.dengue} / {bhs.infectious}</strong>
-                            </div>
-                            <div className="bg-pink-50 p-1.5 rounded border border-pink-100">
-                              <span className="text-pink-600 block text-[10px]">Maternal</span>
-                              <strong className="text-pink-800 text-xs">{bhs.maternal}</strong>
-                            </div>
-                            <div className="bg-amber-50 p-1.5 rounded border border-amber-100">
-                              <span className="text-amber-600 block text-[10px]">NCD (PhilPEN)</span>
-                              <strong className="text-amber-800 text-xs">{bhs.ncd}</strong>
-                            </div>
-                          </div>
-
-                          <div className="text-[11px] text-slate-600 pt-1 border-t border-slate-100 space-y-0.5">
-                            <div>Catchment Pop.: <strong>{bhs.population.toLocaleString()}</strong></div>
-                            <div>BHS → RHU Referrals: <strong>{bhs.referrals}</strong></div>
-                            <div>Station Hotline: <strong>{bhs.contact}</strong></div>
-                          </div>
-                        </div>
-                      </Popup>
-                    </Marker>
-                  ))}
+                {/* HEALTH CENTER PINS (With Smart Clustering & Click-to-Inspect Pop-ups) */}
+                {showHealthPins && (
+                  <SmartPinClusterLayer
+                    healthCenters={enrichedHealthCenters}
+                    clusteringEnabled={clusteringEnabled}
+                    focusedBhsId={focusedBhsId}
+                    bufferKm={bufferKm}
+                    showAllBuffers={showAllBuffers}
+                    onSelectBhs={(bhs) => {
+                      setFocusedBhsId(bhs.id);
+                      setInspectedHotspot(null);
+                    }}
+                    onToggleRingForBhs={(id) => {
+                      setFocusedBhsId((prev) => (prev === id ? null : id));
+                    }}
+                  />
+                )}
               </MapContainer>
 
-              {/* REVISED THERMAL GRADIENT & PIN LEGEND */}
+              {/* ADAPTIVE MAP LEGEND */}
               <div className="absolute bottom-6 right-6 bg-white/95 backdrop-blur px-4 py-3.5 rounded-xl shadow-lg border border-slate-200 z-[400] pointer-events-none w-72">
-                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wide mb-2.5">
-                  Map Legend
+                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wide mb-2">
+                  Surveillance Legend
                 </h3>
 
-                {(mapLayer === 'heat' || mapLayer === 'both') && (
+                {showHeatMap && (
                   <div className="space-y-2 mb-3">
-                    <div className="text-[11px] font-semibold text-slate-700">
-                      Case Density Heat Map
+                    <div className="flex items-center justify-between text-[11px] font-semibold text-slate-700">
+                      <span>
+                        {heatMode === 'weighted'
+                          ? 'Weighted Case Density'
+                          : 'Normalized Attack Rate'}
+                      </span>
+                      <span className="text-[10px] font-normal text-slate-500">
+                        {heatMode === 'weighted' ? 'Severity-weighted' : 'Per 10,000 pop.'}
+                      </span>
                     </div>
 
-                    {/* Smooth Spectrum Gradient Bar */}
                     <div>
                       <div
                         className="h-3 w-full rounded-full border border-slate-200 shadow-inner"
@@ -1455,23 +1960,22 @@ export default function CHODashboard() {
                       </div>
                     </div>
 
-                    {/* Tiered Clinical Key */}
-                    <div className="grid grid-cols-2 gap-x-2 gap-y-1 pt-1 text-[10px] text-slate-600">
+                    <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[10px] text-slate-600">
                       <div className="flex items-center gap-1.5">
                         <span className="w-2.5 h-2.5 rounded-full bg-red-500 shrink-0" />
-                        Critical Cluster (Outbreak)
+                        Critical Outbreak Cluster
                       </div>
                       <div className="flex items-center gap-1.5">
                         <span className="w-2.5 h-2.5 rounded-full bg-orange-500 shrink-0" />
-                        High Case Concentration
+                        High Risk Density
                       </div>
                       <div className="flex items-center gap-1.5">
                         <span className="w-2.5 h-2.5 rounded-full bg-yellow-400 shrink-0" />
-                        Elevated Activity
+                        Elevated Cases
                       </div>
                       <div className="flex items-center gap-1.5">
                         <span className="w-2.5 h-2.5 rounded-full bg-green-500 shrink-0" />
-                        Moderate Spread
+                        Moderate Activity
                       </div>
                       <div className="flex items-center gap-1.5 col-span-2">
                         <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0" />
@@ -1481,29 +1985,38 @@ export default function CHODashboard() {
                   </div>
                 )}
 
-                {(mapLayer === 'pin' || mapLayer === 'both') && (
-                  <div className={`${mapLayer === 'both' ? 'pt-2.5 border-t border-slate-200' : ''} space-y-1.5`}>
-                    <div className="text-[11px] font-semibold text-slate-700">
-                      Health Facility Markers
-                    </div>
-                    <div className="flex items-center gap-2 text-[11px] text-slate-600">
-                      <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#ec0075] text-white text-[10px] font-bold shadow-sm">
-                        +
-                      </span>
-                      Barangay Health Center (BHS)
-                    </div>
-                    <div className="flex items-center gap-2 text-[11px] text-slate-600">
-                      <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-slate-900 text-white text-[9px] font-bold">
-                        3
-                      </span>
-                      Total Cases Logged at Station
-                    </div>
+                {(showHealthPins || showAllBuffers || focusedBhsId) && (
+                  <div className={`${showHeatMap ? 'pt-2 border-t border-slate-200' : ''} space-y-1.5 text-[11px] text-slate-600`}>
+                    {showHealthPins && (
+                      <>
+                        <div className="flex items-center gap-2">
+                          <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#ec0075] text-white text-[10px] font-bold">
+                            +
+                          </span>
+                          Barangay Health Center (Click to Inspect)
+                        </div>
+                        {clusteringEnabled && (
+                          <div className="flex items-center gap-2">
+                            <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#ec0075] ring-2 ring-pink-200 text-white text-[9px] font-bold">
+                              3
+                            </span>
+                            Clustered Health Centers (Click to Expand)
+                          </div>
+                        )}
+                      </>
+                    )}
+                    {(showAllBuffers || focusedBhsId) && (
+                      <div className="flex items-center gap-2">
+                        <span className="w-4 h-4 rounded-full border-2 border-dashed border-pink-600 bg-pink-100/50 inline-block" />
+                        {bufferKm} km Service Buffer Ring
+                      </div>
+                    )}
                   </div>
                 )}
 
                 <div className="mt-2.5 pt-2 border-t border-slate-200 flex justify-between items-center text-[10px] text-slate-400">
-                  <span>{filteredCases.length} reported cases</span>
-                  <span>{visibleHealthCenters.length} health centers</span>
+                  <span>{filteredCases.length} cases plotted</span>
+                  <span>{bufferCoverageStats.outside} outside {bufferKm}km ring</span>
                 </div>
               </div>
             </div>
@@ -1794,7 +2307,6 @@ export default function CHODashboard() {
                   </div>
                 </div>
 
-                {/* Section A & Section B */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <div>
                     <h3 className="text-xs font-bold uppercase tracking-wider bg-slate-800 text-white px-3 py-2 rounded-t">
@@ -1864,7 +2376,6 @@ export default function CHODashboard() {
                   </div>
                 </div>
 
-                {/* Section C, E, G */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div>
                     <h3 className="text-xs font-bold uppercase tracking-wider bg-slate-800 text-white px-3 py-2 rounded-t">
@@ -1970,7 +2481,6 @@ export default function CHODashboard() {
                   </div>
                 </div>
 
-                {/* LGU Data Banking Matrix */}
                 <div className="overflow-x-auto">
                   <h3 className="text-xs font-bold uppercase tracking-wider bg-slate-800 text-white px-3 py-2 rounded-t">
                     LGU Data Banking — Medical Consultations & Referrals (Age & Sex)
@@ -2018,7 +2528,6 @@ export default function CHODashboard() {
                   </table>
                 </div>
 
-                {/* Signatories Footer */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 pt-6 border-t border-slate-200 text-xs">
                   <div>
                     <p className="text-slate-500">Prepared by:</p>
